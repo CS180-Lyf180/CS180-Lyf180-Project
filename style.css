@@ -1562,3 +1562,9 @@ body {
 .journal-entries-container::-webkit-scrollbar-thumb:hover {
     background: #EA9999;
 }
+
+.crossed-out {
+  text-decoration: line-through;
+  opacity: 0.6;
+  pointer-events: none;
+}
