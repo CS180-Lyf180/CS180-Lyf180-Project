@@ -601,10 +601,11 @@ function onHabit() {
     overlay.addEventListener("click", handleHabitOverlayClick);
 }
 
-function offHabit() {
-    const overlay = document.getElementById("add-habit-overlay");
-    overlay.style.display = "none";
-    overlay.removeEventListener("click", handleHabitOverlayClick);
+function offHabit(habitId) {
+  const habitElement = document.getElementById(habitId);
+  if (habitElement) {
+    habitElement.classList.add("crossed-out");
+  }
 }
 
 function handleHabitOverlayClick(event) {
