@@ -1436,65 +1436,9 @@ body {
     
 }
 
-#add-goal-overlay{
-    position: fixed;
-    display: none;
-    background-color: rgba(0, 0, 0, 0.701);
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-}
 
-#add-goal-form{
-    position: relative;
-    align-items: center;
-    background-color: #ea9999;
-    border: 3px solid #014240;
-    border-radius: 20px;
-    padding: 20px;
-    margin: 200px;
-}
 
-#add-goal-form > h6 {
-    font-family: Wix Made for Display;
-    font-weight: 100;
-    color: #000000;
-    position: relative;
-    text-align: center;
-    font-size: 80px;
-}
 
-#goal-input{
-    position: relative;
-    width: 90%;
-    align-items: center;
-    height: 50px;
-    border: 3px solid #014240;
-    border-radius: 20px;
-    padding: 20px;
-    font-family: Wix Madefor Display;
-    color: #014240;
-    font-size: 40px;
-    left: 5%;
-}
-
-#submit-goal{
-    margin: 30px;
-    left: 40%;
-    position: relative;
-    width: 150px;
-    text-align: center;
-    align-items: center;
-    height: 70px;
-    background-color: #014240;
-    color: #ffffff;
-    font-size: 40px;
-    border-radius: 20px;
-    border: 3px solid #014240;
-    cursor: pointer;
-}
 
 /* For WebKit browsers (Chrome, Safari) */
 #habits-list-container::-webkit-scrollbar {
