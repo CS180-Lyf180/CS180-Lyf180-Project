@@ -1,4 +1,6 @@
-const BACKEND_URL = "https://cs180-lyf180-project.onrender.com";
+// Determine if we're running locally or in production
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const BACKEND_URL = isLocalhost ? "http://localhost:3000" : "https://cs180-lyf180-project.onrender.com";
 
 // Logout function
 function logout() {
@@ -62,6 +64,7 @@ async function saveCurrentUser(userData) {
         if (!username) return;
 
         // Only send updatable fields
+        // EXCLUDE reflections to prevent overwriting journal entries
         const updatableFields = {
             goals: userData.goals,
             habits: userData.habits,
@@ -69,7 +72,6 @@ async function saveCurrentUser(userData) {
             moods: userData.moods,
             reminders: userData.reminders,
             suggestions: userData.suggestions,
-            reflections: userData.reflections,
             unlockedBadges: userData.unlockedBadges
         };
 
@@ -649,8 +651,12 @@ async function addMood(mood, journalEntry) {
         // Update the display
         updateMoodDisplay();
         
-        // Generate and update suggestions with the new mood
-        await generateSuggestions();
+        // Generate suggestions based on the journal entry and mood
+        if (journalEntry && journalEntry.trim()) {
+            await generateSuggestionsFromJournal(journalEntry);
+        } else {
+            await generateSuggestions();
+        }
         updateSuggestionsDisplay();
 
         // Update suggestions based on the journal entry
@@ -722,28 +728,139 @@ function selectMood(mood, button) {
 // Function to submit mood and journal entry
 async function submitMoodAndJournal() {
     const journalEntry = document.getElementById("journal-entry").value;
-
+    const moodToSave = selectedMood; // Save the current mood before resetting
+    console.log('Submitting mood and journal:', { selectedMood, journalEntry });
+    
     if (!selectedMood) {
-        console.error('No mood selected');
         alert('Please select a mood before submitting.');
         return;
     }
-
     if (!journalEntry.trim()) {
         console.error('No journal entry provided');
         alert('Please enter a journal entry before submitting.');
         return;
     }
 
-    // Update suggestions based on the journal entry
-    await generateSuggestionsFromJournal(journalEntry);
+    // Create new entry object
+    const newEntry = {
+        date: new Date().toISOString(),
+        text: journalEntry,
+        mood: selectedMood
+    };
 
-    // Update the suggestions display
-    updateSuggestionsDisplay();
-
-    // Optionally, you can clear the journal entry field after submission
+    // Get existing entries from localStorage or initialize empty array
+    const username = localStorage.getItem('username');
+    const localStorageKey = `${username}_journal_entries`;
+    let entries = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
+    
+    // Add new entry to the beginning of the array
+    entries.unshift(newEntry);
+    // Sort entries by date descending (latest first)
+    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Save to localStorage
+    localStorage.setItem(localStorageKey, JSON.stringify(entries));
+    
+    // Update display immediately
+    const journalEntriesDiv = document.getElementById('journal-entries');
+    if (journalEntriesDiv) {
+        journalEntriesDiv.innerHTML = '';
+        entries.forEach(entry => {
+            const entryElement = document.createElement('div');
+            entryElement.className = 'journal-entry';
+            entryElement.innerHTML = `
+                <p><strong>${new Date(entry.date).toLocaleString()}</strong></p>
+                <p>${entry.text}</p>
+                <p>Mood: ${entry.mood}</p>
+            `;
+            journalEntriesDiv.appendChild(entryElement);
+        });
+    }
+    
+    // Also refresh the journal entries list to ensure the latest is shown
+    loadJournalEntries();
+    
+    // Clear the form
     document.getElementById("journal-entry").value = '';
     selectedMood = ''; // Reset the selected mood
+    updateMoodDisplay(); // Update the mood display
+
+    // Show success message
+    const successMessage = document.createElement('div');
+    successMessage.className = 'success-message';
+    successMessage.textContent = 'Mood and journal entry saved successfully!';
+    successMessage.style.position = 'fixed';
+    successMessage.style.top = '20px';
+    successMessage.style.left = '50%';
+    successMessage.style.transform = 'translateX(-50%)';
+    successMessage.style.backgroundColor = '#4CAF50';
+    successMessage.style.color = 'white';
+    successMessage.style.padding = '10px 20px';
+    successMessage.style.borderRadius = '5px';
+    successMessage.style.zIndex = '1000';
+    document.body.appendChild(successMessage);
+
+    // Remove success message after 3 seconds
+    setTimeout(() => {
+        successMessage.remove();
+    }, 3000);
+
+    // Save to MongoDB in the background
+    try {
+        // Save mood to MongoDB
+        console.log('[DEBUG] Sending mood to:', `${BACKEND_URL}/api/users/${username}/mood`, 'Payload:', { mood: moodToSave });
+        const moodRes = await fetch(`${BACKEND_URL}/api/users/${username}/mood`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ mood: moodToSave })
+        });
+        const moodResBody = await moodRes.json().catch(() => ({}));
+        console.log('[DEBUG] Mood response:', moodRes.status, moodResBody);
+
+        // Save journal entry to MongoDB
+        console.log('[DEBUG] Sending journal entry to:', `${BACKEND_URL}/api/users/${username}/journal`, 'Payload:', { journalEntry, mood: moodToSave });
+        const journalRes = await fetch(`${BACKEND_URL}/api/users/${username}/journal`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ journalEntry, mood: moodToSave })
+        });
+        const journalResBody = await journalRes.json().catch(() => ({}));
+        console.log('[DEBUG] Journal response:', journalRes.status, journalResBody);
+        
+        // After successful MongoDB save, sync localStorage with the server response
+        // This ensures localStorage matches exactly what's in MongoDB
+        setTimeout(async () => {
+            try {
+                const syncResponse = await fetch(`${BACKEND_URL}/api/users/${username}/journal`);
+                if (syncResponse.ok) {
+                    const syncData = await syncResponse.json();
+                    if (syncData.journalEntries) {
+                        // Update localStorage with the exact data from MongoDB
+                        syncData.journalEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        localStorage.setItem(localStorageKey, JSON.stringify(syncData.journalEntries));
+                        // Update display with synced data
+                        loadJournalEntries();
+                    }
+                }
+            } catch (syncError) {
+                console.error('[DEBUG] Error syncing with MongoDB:', syncError);
+            }
+        }, 1000); // Small delay to ensure MongoDB has processed the save
+        
+    } catch (error) {
+        console.error('[DEBUG] Error saving to MongoDB:', error);
+        // Don't show error to user since we've already saved locally
+    }
+
+    // Always generate suggestions after submitting a journal entry
+    await generateSuggestionsFromJournal(journalEntry);
+    updateSuggestionsDisplay();
+
+    // After successful submission, reset selectedMood
+    selectedMood = '';
 }
 
 function extractKeywords(journalEntry) {
@@ -778,19 +895,39 @@ function extractKeywords(journalEntry) {
 
 // New function to generate suggestions based on journal entry
 async function generateSuggestionsFromJournal(journalEntry) {
-    // Analyze the journal entry and generate suggestions
-    const keywords = extractKeywords(journalEntry); // Assume this function extracts keywords
-    const suggestions = [];
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/analyze-journal`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                journalEntry,
+                mood: selectedMood
+            })
+        });
 
-    // Example logic to generate suggestions based on keywords
-    keywords.forEach(keyword => {
-        suggestions.push(`Consider setting a goal related to ${keyword}.`);
-    });
+        if (!response.ok) {
+            throw new Error('Failed to analyze journal entry');
+        }
 
-    // Save suggestions to user data
-    const user = getCurrentUser();
-    user.suggestions = suggestions;
-    await saveCurrentUser(user);
+        const data = await response.json();
+        
+        // Save suggestions to user data
+        const user = getCurrentUser();
+        user.suggestions = data.suggestions;
+        await saveCurrentUser(user);
+        
+        // Update the suggestions display
+        updateSuggestionsDisplay();
+    } catch (error) {
+        console.error('Error generating suggestions from journal:', error);
+        // Fallback to basic suggestions if API call fails
+        const user = getCurrentUser();
+        user.suggestions = ["Set a new goal or habit to get started!"];
+        await saveCurrentUser(user);
+        updateSuggestionsDisplay();
+    }
 }
 
 // Update mood display
@@ -815,11 +952,19 @@ function updateMoodDisplay() {
                 <span>Today's Mood: <span style="font-size:1.5em;">${getMoodEmoji(todayMood.mood)}</span> ${todayMood.mood}</span>
                 <button onclick="showMoodSelector(event)" class="change-mood-btn">Change</button>
             </div>
+            <div id="journal-entries" class="journal-entries-container"></div>
         `;
+        
+        // Load journal entries after creating the container
+        loadJournalEntries();
     } else {
         moodContainer.innerHTML = `
             <button onclick="showMoodSelector(event)" class="mood-btn">How are you feeling today?</button>
+            <div id="journal-entries" class="journal-entries-container"></div>
         `;
+        
+        // Load journal entries after creating the container
+        loadJournalEntries();
     }
 }
 
@@ -1635,4 +1780,77 @@ function showAchievementPopup(badge) {
 document.addEventListener('DOMContentLoaded', function() {
     renderBadges();
 });
+
+async function loadJournalEntries() {
+    const username = localStorage.getItem('username');
+    if (!username) return;
+
+    // Get entries from localStorage
+    const localStorageKey = `${username}_journal_entries`;
+    let entries = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
+    
+    // Sort entries by date descending (newest first)
+    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Removed the slice(0, 6) to allow unlimited entries
+    localStorage.setItem(localStorageKey, JSON.stringify(entries));
+    
+    // Display entries from localStorage immediately
+    const journalEntriesDiv = document.getElementById('journal-entries');
+    if (journalEntriesDiv) {
+        journalEntriesDiv.innerHTML = '';
+        entries.forEach(entry => {
+            const entryElement = document.createElement('div');
+            entryElement.className = 'journal-entry';
+            entryElement.innerHTML = `
+                <p><strong>${new Date(entry.date).toLocaleString()}</strong></p>
+                <p>${entry.text}</p>
+                ${entry.mood ? `<p>Mood: ${entry.mood}</p>` : ''}
+            `;
+            journalEntriesDiv.appendChild(entryElement);
+        });
+    }
+
+    try {
+        // Fetch from MongoDB in the background
+        const response = await fetch(`${BACKEND_URL}/api/users/${username}/journal`);
+        if (!response.ok) {
+            throw new Error('Failed to load journal entries');
+        }
+        const data = await response.json();
+        
+        // Update localStorage with MongoDB data (no limit)
+        if (data.journalEntries && data.journalEntries.length > 0) {
+            // Sort MongoDB data by date descending
+            data.journalEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            localStorage.setItem(localStorageKey, JSON.stringify(data.journalEntries));
+            
+            // Update display with MongoDB data
+            if (journalEntriesDiv) {
+                journalEntriesDiv.innerHTML = '';
+                data.journalEntries.forEach(entry => {
+                    const entryElement = document.createElement('div');
+                    entryElement.className = 'journal-entry';
+                    entryElement.innerHTML = `
+                        <p><strong>${new Date(entry.date).toLocaleString()}</strong></p>
+                        <p>${entry.text}</p>
+                        ${entry.mood ? `<p>Mood: ${entry.mood}</p>` : ''}
+                    `;
+                    journalEntriesDiv.appendChild(entryElement);
+                });
+            }
+        } else if (data.journalEntries && data.journalEntries.length === 0) {
+            // If MongoDB has no entries, clear localStorage as well
+            localStorage.setItem(localStorageKey, JSON.stringify([]));
+            if (journalEntriesDiv) {
+                journalEntriesDiv.innerHTML = '';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading journal entries from MongoDB:', error);
+        // Keep showing localStorage data if MongoDB fetch fails
+    }
+}
+
+// Call loadJournalEntries when the page loads
+document.addEventListener('DOMContentLoaded', loadJournalEntries);
   

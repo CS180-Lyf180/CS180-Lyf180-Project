@@ -131,20 +131,20 @@ body::before {
 
 .dashboard-item > div {
     background-color: #BFD4D9;
-    padding: 16px;
+    padding: 20px;
     border: 3px solid #014240;
-    border-radius: 15px !important;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    position: relative;
-    z-index: 1;
-    margin: 0;
+    border-radius: 10px;
 }
 
-.dashboard-item > div:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    z-index: 2;
+.dashboard-item > div > h6 {
+    font-family: Wix Madefor Display;
+    color: #014240;
+    position: relative;
+    margin: 0;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #quotes {
@@ -599,7 +599,7 @@ button:hover, .login-button:hover, #logout-button:hover, #clear-all-button:hover
 .delete-btn:hover, .revert-button:hover, .change-mood-btn:hover {
     background-color: #ff6b6b;
     color: #fff;
-    }
+}
 
 .topbar {
     width: 100%;
@@ -629,7 +629,7 @@ button:hover, .login-button:hover, #logout-button:hover, #clear-all-button:hover
     }
     #habits, #goals {
         margin: 0 0 0 0;
-}
+    }
     .habits-goals-row {
         flex-direction: row;
         gap: 16px;
@@ -830,7 +830,7 @@ li[tabindex]:focus-visible, #goal-list li:focus-visible, #habits-list li:focus-v
 }
 
 #reflection-input {
-        width: 100%;
+    width: 100%;
     max-width: 420px;
     min-width: 220px;
     min-height: 100px;
@@ -868,7 +868,7 @@ li[tabindex]:focus-visible, #goal-list li:focus-visible, #habits-list li:focus-v
     max-width: 420px;
     width: 100%;
     text-align: right;
-    }
+}
 
 #save-reflection-button {
     background: linear-gradient(90deg, #76A5AF 0%, #014240 100%);
@@ -1066,7 +1066,7 @@ li[tabindex]:focus-visible, #goal-list li:focus-visible, #habits-list li:focus-v
     background: linear-gradient(90deg, #bfc9d9 0%, #e0e7ef 100%);
     border: 1.5px dashed #bfc9d9;
     opacity: 0.85;
-    }
+}
 .badge.locked::after {
     content: '\1F512'; /* Unicode lock emoji */
     position: absolute;
@@ -1555,4 +1555,66 @@ body {
     background-color: #007BFF; /* Change to your desired color */
     color: white; /* Change text color for better contrast */
     border: 2px solid #0056b3; /* Optional: add a border */
+}
+
+.journal-entries-container {
+    margin-top: 20px;
+    max-height: 420px;
+    min-height: 80px;
+    overflow: auto;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px -4px #01424033 inset, 0 -4px 8px -4px #01424033 inset;
+    overscroll-behavior: contain;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+}
+
+.journal-entry {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.journal-entry:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.journal-entry p {
+    margin: 5px 0;
+    color: #014240;
+}
+
+.journal-entry p:first-child {
+    font-size: 0.9em;
+    color: #76A5AF;
+}
+
+.journal-entry p:last-child {
+    font-style: italic;
+    color: #EA9999;
+}
+
+/* Custom scrollbar for journal entries container */
+.journal-entries-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.journal-entries-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.journal-entries-container::-webkit-scrollbar-thumb {
+    background: #76A5AF;
+    border-radius: 4px;
+}
+
+.journal-entries-container::-webkit-scrollbar-thumb:hover {
+    background: #EA9999;
 }
