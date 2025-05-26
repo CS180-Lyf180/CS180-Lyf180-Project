@@ -131,20 +131,20 @@ body::before {
 
 .dashboard-item > div {
     background-color: #BFD4D9;
-    padding: 16px;
+    padding: 20px;
     border: 3px solid #014240;
-    border-radius: 15px !important;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    position: relative;
-    z-index: 1;
-    margin: 0;
+    border-radius: 10px;
 }
 
-.dashboard-item > div:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    z-index: 2;
+.dashboard-item > div > h6 {
+    font-family: Wix Madefor Display;
+    color: #014240;
+    position: relative;
+    margin: 0;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #quotes {
@@ -196,7 +196,7 @@ body::before {
     position: relative;
 }
 
-#goal-header-text {
+/* #goal-header-text {
     font-family: 'Wix Madefor Display', sans-serif;
     font-size: 1.2rem;
     font-weight: 700;
@@ -211,7 +211,7 @@ body::before {
     text-align: center;
     border-bottom: none;
     padding-bottom: 0;
-}
+} */
 
 #add-goal-button, #add-habit-button {
     width: 48px;
@@ -223,7 +223,13 @@ body::before {
     margin-right: 20px;
 }
 
-#add-goal-icon, #add-habit-icon {
+#add-goal-icon {
+    width: 32px;
+    height: 32px;
+    display: block;
+}
+
+#add-habit-icon {
     width: 32px;
     height: 32px;
     display: block;
@@ -250,11 +256,6 @@ body::before {
     box-shadow: 0 6px 16px rgba(0,0,0,0.12);
 }
 
-#goal-list-container, #habits-list-container {
-    padding: 0;
-    overflow: hidden;
-    border-radius: 10px;
-}
 
 #goal-list li, #habits-list li {
     box-sizing: border-box;
@@ -461,11 +462,11 @@ body::before {
     position: relative;
 }
 
-#habits-header-text {
+.header-text {
     font-family: 'Wix Madefor Display', sans-serif;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     font-weight: 700;
-    color: #014280;
+    color: #014240;
     letter-spacing: 0.5px;
     margin-bottom: 0.7em;
     margin-top: 0.2em;
@@ -501,14 +502,12 @@ body::before {
 
 #habits-list-container {
     position: relative;
-    padding: 20px;
+    padding-bottom: 20px;
     overflow-y: auto;
-    width: 100%;
-    max-height: 400px;
-    background-color: transparent;
-    border-radius: 10px;
-    overflow-x: hidden;
-    padding: 0 10px;
+    width: 540px;
+    height: 190px;
+    left: 2px;
+    bottom: 10px;
 }
 
 #habits-list {
@@ -600,7 +599,7 @@ button:hover, .login-button:hover, #logout-button:hover, #clear-all-button:hover
 .delete-btn:hover, .revert-button:hover, .change-mood-btn:hover {
     background-color: #ff6b6b;
     color: #fff;
-    }
+}
 
 .topbar {
     width: 100%;
@@ -630,7 +629,7 @@ button:hover, .login-button:hover, #logout-button:hover, #clear-all-button:hover
     }
     #habits, #goals {
         margin: 0 0 0 0;
-}
+    }
     .habits-goals-row {
         flex-direction: row;
         gap: 16px;
@@ -712,7 +711,7 @@ h6, .stats-title, #goal-header-text, #habits-header-text, .dashboard-item > div 
 }
 
 /* Left-aligned headers with true underline */
-#goal-header-text, #habits-header-text {
+/* #goal-header-text, #habits-header-text {
     font-family: 'Wix Madefor Display', sans-serif;
     font-size: 1.2rem;
     font-weight: 700;
@@ -727,7 +726,7 @@ h6, .stats-title, #goal-header-text, #habits-header-text, .dashboard-item > div 
     text-align: center;
     border-bottom: none;
     padding-bottom: 0;
-}
+} */
 
 #goal-header-text::after, #habits-header-text::after {
     content: '';
@@ -831,7 +830,7 @@ li[tabindex]:focus-visible, #goal-list li:focus-visible, #habits-list li:focus-v
 }
 
 #reflection-input {
-        width: 100%;
+    width: 100%;
     max-width: 420px;
     min-width: 220px;
     min-height: 100px;
@@ -869,7 +868,7 @@ li[tabindex]:focus-visible, #goal-list li:focus-visible, #habits-list li:focus-v
     max-width: 420px;
     width: 100%;
     text-align: right;
-    }
+}
 
 #save-reflection-button {
     background: linear-gradient(90deg, #76A5AF 0%, #014240 100%);
@@ -1067,7 +1066,7 @@ li[tabindex]:focus-visible, #goal-list li:focus-visible, #habits-list li:focus-v
     background: linear-gradient(90deg, #bfc9d9 0%, #e0e7ef 100%);
     border: 1.5px dashed #bfc9d9;
     opacity: 0.85;
-    }
+}
 .badge.locked::after {
     content: '\1F512'; /* Unicode lock emoji */
     position: absolute;
@@ -1399,12 +1398,6 @@ body {
     height: 30px;
 }
 
-#goal-header{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 #goal-header-text{
     font-family: Wix Madefor Display;
     color: #014240;
@@ -1432,71 +1425,140 @@ body {
     width: 60px;
 }
 
-#goal-list-container{
+#goals-list-container{
     position: relative;
     padding-bottom: 20px;
     overflow-y: auto;
-    width: 600px;
-    height: 200px;
+    width: 580px;
+    height: 190px;
+    right: 40px;
+    bottom: 10px;
     
 }
 
-#add-goal-overlay{
-    position: fixed;
-    display: none;
-    background-color: rgba(0, 0, 0, 0.701);
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    z-index: 1000;
+
+
+
+
+/* For WebKit browsers (Chrome, Safari) */
+#habits-list-container::-webkit-scrollbar {
+    width: 12px; /* Width of the scrollbar */
 }
 
-#add-goal-form{
-    position: relative;
-    align-items: center;
-    background-color: #ea9999;
-    border: 3px solid #014240;
-    border-radius: 20px;
-    padding: 20px;
-    margin: 200px;
+
+#habits-list-container::-webkit-scrollbar-track {
+    background: #f1f1f1; /* Background of the scrollbar track */
+    border-radius: 10px; /* Rounded corners for the track */
 }
 
-#add-goal-form > h6 {
-    font-family: Wix Made for Display;
-    font-weight: 100;
-    color: #000000;
-    position: relative;
-    text-align: center;
-    font-size: 80px;
+#habits-list-container::-webkit-scrollbar-thumb {
+    background: #76A5AF; /* Color of the scrollbar thumb */
+    border-radius: 10px; /* Rounded corners for the thumb */
 }
 
-#goal-input{
+#habits-list-container::-webkit-scrollbar-thumb:hover {
+    background: #EA9999; /* Color of the thumb on hover */
+}
+
+/* For Firefox */
+#habits-list-container {
+    scrollbar-width: thin; /* "auto" or "thin" */
+    scrollbar-color: #76A5AF #f1f1f1; /* thumb color and track color */
+}
+
+
+
+/* For WebKit browsers (Chrome, Safari) */
+#goals-list-container::-webkit-scrollbar {
+    width: 12px; /* Width of the scrollbar */
+}
+
+
+#goals-list-container::-webkit-scrollbar-track {
+    background: #f1f1f1; /* Background of the scrollbar track */
+    border-radius: 10px; /* Rounded corners for the track */
+}
+
+#goals-list-container::-webkit-scrollbar-thumb {
+    background: #76A5AF; /* Color of the scrollbar thumb */
+    border-radius: 10px; /* Rounded corners for the thumb */
+}
+
+#goals-list-container::-webkit-scrollbar-thumb:hover {
+    background: #EA9999; /* Color of the thumb on hover */
+}
+
+/* For Firefox */
+#goals-list-container {
+    scrollbar-width: thin; /* "auto" or "thin" */
+    scrollbar-color: #76A5AF #f1f1f1; /* thumb color and track color */
+}
+
+
+.mood-option.selected {
+    background-color: #007BFF; /* Change to your desired color */
+    color: white; /* Change text color for better contrast */
+    border: 2px solid #0056b3; /* Optional: add a border */
+}
+
+.journal-entries-container {
+    margin-top: 20px;
+    max-height: 420px;
+    min-height: 80px;
+    overflow: auto;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px -4px #01424033 inset, 0 -4px 8px -4px #01424033 inset;
+    overscroll-behavior: contain;
     position: relative;
-    width: 90%;
-    align-items: center;
-    height: 50px;
-    border: 3px solid #014240;
-    border-radius: 20px;
-    padding: 20px;
-    font-family: Wix Madefor Display;
+    z-index: 2;
+    pointer-events: auto;
+}
+
+.journal-entry {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.journal-entry:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.journal-entry p {
+    margin: 5px 0;
     color: #014240;
-    font-size: 40px;
-    left: 5%;
 }
 
-#submit-goal{
-    margin: 30px;
-    left: 40%;
-    position: relative;
-    width: 150px;
-    text-align: center;
-    align-items: center;
-    height: 70px;
-    background-color: #014240;
-    color: #ffffff;
-    font-size: 40px;
-    border-radius: 20px;
-    border: 3px solid #014240;
-    cursor: pointer;
+.journal-entry p:first-child {
+    font-size: 0.9em;
+    color: #76A5AF;
+}
+
+.journal-entry p:last-child {
+    font-style: italic;
+    color: #EA9999;
+}
+
+/* Custom scrollbar for journal entries container */
+.journal-entries-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.journal-entries-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.journal-entries-container::-webkit-scrollbar-thumb {
+    background: #76A5AF;
+    border-radius: 4px;
+}
+
+.journal-entries-container::-webkit-scrollbar-thumb:hover {
+    background: #EA9999;
 }
