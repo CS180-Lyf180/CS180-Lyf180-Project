@@ -22,8 +22,39 @@ const clientOptions = {
 };
 
 mongoose.connect(uri, clientOptions)
-    .then(() => {
+    .then(async () => {
         console.log('Successfully connected to MongoDB Atlas!');
+        
+        // Migration: Ensure all reflections have proper structure
+        try {
+            const users = await User.find({});
+            for (const user of users) {
+                let needsUpdate = false;
+                if (user.reflections && user.reflections.length > 0) {
+                    user.reflections = user.reflections.map(reflection => {
+                        // Ensure each reflection has date and text fields
+                        if (!reflection.date) {
+                            reflection.date = new Date();
+                            needsUpdate = true;
+                        }
+                        if (typeof reflection === 'string') {
+                            // Old format was just a string
+                            reflection = { date: new Date(), text: reflection };
+                            needsUpdate = true;
+                        }
+                        return reflection;
+                    });
+                    
+                    if (needsUpdate) {
+                        await user.save();
+                        console.log(`Updated reflections structure for user: ${user.username}`);
+                    }
+                }
+            }
+            console.log('Migration check completed');
+        } catch (migrationError) {
+            console.error('Migration error:', migrationError);
+        }
     })
     .catch((error) => {
         console.error('Error connecting to MongoDB:', error);
@@ -62,7 +93,8 @@ const userSchema = new mongoose.Schema({
     suggestions: [String],
     reflections: [{
         date: { type: Date, default: Date.now },
-        text: String
+        text: String,
+        mood: String
     }],
     unlockedBadges: [String]
 });
@@ -236,8 +268,11 @@ app.put('/api/users/:username', async (req, res) => {
         const user = await User.findOne({ username: req.params.username });
         if (user) {
             // Only update fields that are present in req.body
+            // EXCLUDE reflections from being updated via PUT to prevent overwriting journal entries
             Object.keys(req.body).forEach(key => {
-                user[key] = req.body[key];
+                if (key !== 'reflections') {  // Skip reflections field
+                    user[key] = req.body[key];
+                }
             });
             await user.save();
             res.json(user);
@@ -291,7 +326,9 @@ app.post('/api/users/:username/reflection', async (req, res) => {
             // Add new reflection
             user.reflections.push({ date: targetDate, text: reflection });
         }
-
+        // Sort reflections by date descending (newest first)
+        user.reflections.sort((a, b) => new Date(b.date) - new Date(a.date));
+        // Removed the slice(0, 6) to allow unlimited entries
         await user.save();
         res.json({ success: true });
     } catch (error) {
@@ -338,6 +375,176 @@ app.get('/api/users/:username/reflections', async (req, res) => {
         const reflections = user.reflections.sort((a, b) => new Date(b.date) - new Date(a.date));
         res.json({ reflections });
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// New endpoint to store a mood for a user
+app.post('/api/users/:username/mood', async (req, res) => {
+    try {
+        console.log('Received mood request:', req.params.username, req.body);
+        const { username } = req.params;
+        const { mood } = req.body;
+        if (!mood) {
+            console.log('No mood provided in request');
+            return res.status(400).json({ error: 'Mood is required' });
+        }
+        const user = await User.findOne({ username });
+        if (!user) {
+            console.log('User not found:', username);
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Find today's mood if it exists
+        const existingMoodIndex = user.moods.findIndex(m => {
+            const moodDate = new Date(m.date);
+            moodDate.setHours(0, 0, 0, 0);
+            return moodDate.getTime() === today.getTime();
+        });
+
+        if (existingMoodIndex !== -1) {
+            console.log('Updating existing mood for user:', username);
+            // Update existing mood
+            user.moods[existingMoodIndex].mood = mood;
+        } else {
+            console.log('Adding new mood for user:', username);
+            // Add new mood
+            user.moods.push({
+                date: today,
+                mood: mood,
+                completedGoals: user.goals ? user.goals.filter(g => g.completed).length : 0,
+                completedHabits: user.habits ? user.habits.filter(h => h.completed).length : 0
+            });
+        }
+
+        await user.save();
+        console.log('Successfully saved mood for user:', username);
+        return res.status(201).json({ message: 'Mood saved successfully', mood: mood });
+    } catch (error) {
+        console.error('Error saving mood:', error);
+        return res.status(500).json({ error: 'Failed to save mood' });
+    }
+});
+
+// New endpoint to store a journal entry for a user
+app.post('/api/users/:username/journal', async (req, res) => {
+    try {
+        console.log('Received journal request:', req.params.username, req.body);
+        const { username } = req.params;
+        const { journalEntry, mood } = req.body;  // Accept mood from request
+        if (!journalEntry) {
+            console.log('No journal entry provided in request');
+            return res.status(400).json({ error: 'Journal entry is required' });
+        }
+        const user = await User.findOne({ username });
+        if (!user) {
+            console.log('User not found:', username);
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Log current reflections count before adding
+        console.log(`Current reflections count for ${username}: ${user.reflections.length}`);
+        
+        // Add the journal entry to the user's reflections array with mood
+        const newReflection = { 
+            date: new Date(), 
+            text: journalEntry
+        };
+        // Only add mood if it's provided
+        if (mood) {
+            newReflection.mood = mood;
+        }
+        user.reflections.push(newReflection);
+        
+        // Sort reflections by date descending (newest first)
+        user.reflections.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // Log reflections count after adding
+        console.log(`New reflections count for ${username}: ${user.reflections.length}`);
+        console.log(`Latest reflection: ${JSON.stringify(user.reflections[0])}`);
+        
+        // Save and verify
+        await user.save();
+        
+        // Fetch the user again to verify save
+        const verifyUser = await User.findOne({ username });
+        console.log(`Verified reflections count after save: ${verifyUser.reflections.length}`);
+        
+        console.log('Successfully saved journal entry for user:', username);
+        return res.status(201).json({ 
+            message: 'Journal entry saved successfully', 
+            entry: journalEntry,
+            mood: mood,
+            totalEntries: verifyUser.reflections.length
+        });
+    } catch (error) {
+        console.error('Error saving journal entry:', error);
+        return res.status(500).json({ error: 'Failed to save journal entry' });
+    }
+});
+
+// New endpoint to retrieve journal entries for a user
+app.get('/api/users/:username/journal', async (req, res) => {
+    try {
+        console.log('Received journal request for user:', req.params.username);
+        const { username } = req.params;
+        const user = await User.findOne({ username });
+        if (!user) {
+            console.log('User not found:', username);
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Log detailed information about reflections
+        console.log(`Total reflections for ${username}: ${user.reflections.length}`);
+        if (user.reflections.length > 0) {
+            console.log(`First reflection: ${JSON.stringify(user.reflections[0])}`);
+            console.log(`Last reflection: ${JSON.stringify(user.reflections[user.reflections.length - 1])}`);
+        }
+        
+        // Ensure reflections are sorted by date descending
+        user.reflections.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        console.log('Successfully retrieved journal entries for user:', username);
+        res.json({ journalEntries: user.reflections });
+    } catch (error) {
+        console.error('Error retrieving journal entries:', error);
+        res.status(500).json({ error: 'Failed to retrieve journal entries' });
+    }
+});
+
+// Debug endpoint to check user schema
+app.get('/api/users/:username/debug', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Check if reflections field exists
+        if (!user.reflections) {
+            console.log(`User ${username} has no reflections field, initializing...`);
+            user.reflections = [];
+            await user.save();
+        }
+        
+        // Get raw document from MongoDB
+        const rawUser = await User.collection.findOne({ username });
+        
+        res.json({
+            username: user.username,
+            reflectionsCount: user.reflections ? user.reflections.length : 0,
+            reflectionsFieldExists: !!user.reflections,
+            reflectionsType: Array.isArray(user.reflections) ? 'array' : typeof user.reflections,
+            sampleReflection: user.reflections && user.reflections.length > 0 ? user.reflections[0] : null,
+            rawReflectionsCount: rawUser.reflections ? rawUser.reflections.length : 0,
+            schemaVersion: user.__v
+        });
+    } catch (error) {
+        console.error('Debug error:', error);
         res.status(500).json({ error: error.message });
     }
 });
