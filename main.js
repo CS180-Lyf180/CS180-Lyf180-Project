@@ -320,6 +320,16 @@ function updateStatsDisplay(stats) {
                 margin-top: 5px;
             }
 
+            .nothing-done {
+                color: rgba(255, 255, 255, 0.7);
+                text-align: center;
+                padding: 15px;
+                font-size: 1.1em;
+                margin-top: 15px;
+                background: rgba(255, 255, 255, 0.08);
+                border-radius: 8px;
+            }
+
             @media (max-width: 600px) {
                 .stats-grid {
                     grid-template-columns: 1fr;
