@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+echo "node_modules/" >> .gitignore
