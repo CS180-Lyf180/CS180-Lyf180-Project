@@ -553,4 +553,7 @@ app.get('/api/users/:username/debug', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-}); 
+});
+
+// Export app for testing
+module.exports = app; 
