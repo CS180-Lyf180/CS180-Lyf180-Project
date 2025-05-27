@@ -3,23 +3,11 @@
  * @jest-environment jsdom
  */
 
-// Mock localStorage
-const localStorageMock = {
-    getItem: jest.fn(),
-    setItem: jest.fn(),
-    removeItem: jest.fn(),
-    clear: jest.fn(),
-};
-global.localStorage = localStorageMock;
-
-// Mock fetch
-global.fetch = jest.fn();
-
 describe('Frontend Functionality', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
         localStorage.clear();
-        fetch.mockClear();
+        jest.clearAllMocks();
     });
 
     describe('Mood Selection', () => {
@@ -53,12 +41,9 @@ describe('Frontend Functionality', () => {
             const journalEntry = 'Test journal entry';
             const mood = 'Great';
 
-            localStorage.getItem.mockReturnValue('[]');
-            localStorage.setItem.mockImplementation(() => {});
-
             // Mock the journal storage logic
             const localStorageKey = `${username}_journal_entries`;
-            const entries = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
+            const entries = [];
             
             const newEntry = {
                 date: new Date().toISOString(),
@@ -69,10 +54,11 @@ describe('Frontend Functionality', () => {
             entries.unshift(newEntry);
             localStorage.setItem(localStorageKey, JSON.stringify(entries));
 
-            expect(localStorage.setItem).toHaveBeenCalledWith(
-                localStorageKey,
-                expect.stringContaining(journalEntry)
-            );
+            // Verify the entry was saved
+            const savedEntries = JSON.parse(localStorage.getItem(localStorageKey));
+            expect(savedEntries).toHaveLength(1);
+            expect(savedEntries[0].text).toBe(journalEntry);
+            expect(savedEntries[0].mood).toBe(mood);
         });
     });
 
@@ -85,7 +71,7 @@ describe('Frontend Functionality', () => {
                 stats: { goalsCompleted: 0, habitsCompleted: 0, streak: 0 }
             };
 
-            localStorage.getItem.mockReturnValue(JSON.stringify(mockUser));
+            localStorage.setItem('currentUser', JSON.stringify(mockUser));
 
             // Mock getCurrentUser function
             global.getCurrentUser = function() {
@@ -103,7 +89,7 @@ describe('Frontend Functionality', () => {
 
             const user = global.getCurrentUser();
             expect(user).toEqual(mockUser);
-            expect(localStorage.getItem).toHaveBeenCalledWith('currentUser');
+            expect(localStorage.getItem('currentUser')).toBeTruthy();
         });
     });
-}); 
+});
