@@ -1569,3 +1569,40 @@ body {
 .journal-entries-container::-webkit-scrollbar-thumb:hover {
     background: #EA9999;
 }
+
+.progress-bar {
+    width: 100%;
+    height: 12px;
+    background-color: #e0e0e0;
+    border-radius: 6px;
+    margin-top: 16px;
+    overflow: hidden;
+}
+
+.fill-bar {
+    height: 100%;
+    background-color: #4caf50;
+    width: 0;
+    transition: width 0.3s ease-in-out;
+}
+
+/* .nothing-done {
+    margin-top: 16px;
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+} */
+
+.prog-text {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #000000;
+    letter-spacing: 0.5px;
+}
+
+.nothing-done {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #000000;
+    letter-spacing: 0.5px;
+}
