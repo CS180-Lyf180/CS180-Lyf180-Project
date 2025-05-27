@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Habit Tracker</title>
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background: #f4f4f4;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .habit-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 40px;
+    }
+
+    .habit {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    .habit button {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .habit button:hover {
+      background: #0056b3;
+    }
+
+    canvas {
+      max-width: 700px;
+      margin: 0 auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Habit Tracker</h1>
+
+  <div class="habit-container">
+
+
+  <canvas id="habitChart" width="400" height="200"></canvas>
+
+  <script>
+    const habitData = {
+      
+    };
+
+    const countElements = {
+
+    };
+
+    const ctx = document.getElementById("habitChart").getContext("2d");
+    const habitChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(habitData),
+        datasets: [{
+          label: 'Habits Completed',
+          data: Object.values(habitData),
+          backgroundColor: ['#36a2eb', '#4caf50', '#ffcd56']
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+
+    function incrementHabit(habit) {
+      habitData[habit]++;
+      countElements[habit].textContent = habitData[habit];
+      habitChart.data.datasets[0].data = Object.values(habitData);
+      habitChart.update();
+    }
+  </script>
+
+</body>
+</html>
