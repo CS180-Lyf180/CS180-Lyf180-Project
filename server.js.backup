@@ -77,10 +77,7 @@ const userSchema = new mongoose.Schema({
     stats: {
         goalsCompleted: { type: Number, default: 0 },
         habitsCompleted: { type: Number, default: 0 },
-        streak: { type: Number, default: 0 },
-        progressPercent: { type: Number, default: 0},
-        totalHabits: { type: Number, default: 0 },
-        totalGoals: { type: Number, default: 0 }
+        streak: { type: Number, default: 0 }
     },
     moods: [{
         date: Date,
@@ -215,10 +212,7 @@ app.post('/api/users/register', async (req, res) => {
             stats: {
                 goalsCompleted: 0,
                 habitsCompleted: 0,
-                streak: 0,
-                progressPercent: 0,
-                totalHabits: 0,
-                totalGoals: 0
+                streak: 0
             },
             moods: [{
                 date: new Date(),
@@ -557,11 +551,9 @@ app.get('/api/users/:username/debug', async (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
-}
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
 
 // Export app for testing
 module.exports = app; 
