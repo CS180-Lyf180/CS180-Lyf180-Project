@@ -405,6 +405,9 @@ function showCompletionPopup(itemText, type, itemElement) {
         saveCurrentUser(user);
         updateStatsDisplay(user.stats);
         
+        // Update badge display when stats change
+        renderBadges();
+        
         // Hide popup with animation
         popup.classList.remove('show');
         
@@ -460,11 +463,22 @@ function addGoalClickHandler(goalItem) {
         const user = getCurrentUser();
         user.goals = user.goals.filter(g => g.text !== goalText);
         user.stats.goalsCompleted++;
+        
+        console.log('🎯 Goal completed! New stats:', user.stats);
+        
+        // Immediately update localStorage cache before checking achievements
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        
+        // Save to server (async, but don't wait for it)
         updateProgress(user.stats);
         saveCurrentUser(user);
         
         // Update stats display
         updateStatsDisplay(user.stats);
+        
+        // Check for new achievements immediately (now with updated user data)
+        console.log('🔍 Calling renderBadges() after goal completion...');
+        renderBadgesImmediate();
         
         // Show completion popup
         showCompletionPopup(goalText, 'Goal', this);
@@ -513,11 +527,22 @@ function addHabitClickHandler(habitItem) {
         const user = getCurrentUser();
         user.habits = user.habits.filter(h => h.text !== habitText);
         user.stats.habitsCompleted++;
+        
+        console.log('✅ Habit completed! New stats:', user.stats);
+        
+        // Immediately update localStorage cache before checking achievements
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        
+        // Save to server (async, but don't wait for it)
         updateProgress(user.stats);
         saveCurrentUser(user);
         
         // Update stats display
         updateStatsDisplay(user.stats);
+        
+        // Check for new achievements immediately (now with updated user data)
+        console.log('🔍 Calling renderBadges() after habit completion...');
+        renderBadgesImmediate();
         
         // Show completion popup
         showCompletionPopup(habitText, 'Habit', this);
@@ -1316,13 +1341,54 @@ document.addEventListener('DOMContentLoaded', function() {
 // Track which achievement popups have been shown in this session
 const sessionShownBadges = new Set();
 
-function renderBadges() {
+// Enhanced renderBadges function with better error handling
+function renderBadgesWithRetry(retryCount = 0) {
+    console.log(`🔍 renderBadgesWithRetry() called (attempt ${retryCount + 1})`);
+    
     const badgesList = document.getElementById('badges-list');
     if (!badgesList) {
-        console.error('Badges list element not found');
+        console.error(`❌ Badges list element not found! (attempt ${retryCount + 1})`);
+        
+        // Retry up to 3 times with increasing delays
+        if (retryCount < 3) {
+            const delay = (retryCount + 1) * 200; // 200ms, 400ms, 600ms
+            console.log(`⏳ Retrying in ${delay}ms...`);
+            setTimeout(() => renderBadgesWithRetry(retryCount + 1), delay);
+            return;
+        }
+        
+        // Final attempt - try to find any element with badge in the ID
+        const allElements = document.querySelectorAll('[id*="badge"]');
+        console.log('Found elements with "badge" in ID:', allElements);
         return;
     }
     
+    // Call the original renderBadges function
+    renderBadges();
+}
+
+// Update the original renderBadges calls to use the retry version
+function renderBadgesImmediate() {
+    // Try immediate call first
+    renderBadges();
+    
+    // Also try with retry mechanism as backup
+    renderBadgesWithRetry();
+}
+
+function renderBadges() {
+    console.log('🔍 renderBadges() called');
+    
+    const badgesList = document.getElementById('badges-list');
+    if (!badgesList) {
+        console.error('❌ Badges list element not found! Looking for #badges-list');
+        // Try to find it with a different approach
+        const allElements = document.querySelectorAll('[id*="badge"]');
+        console.log('Found elements with "badge" in ID:', allElements);
+        return;
+    }
+    
+    console.log('✅ Found badges list element');
     badgesList.innerHTML = '';
     
     const badgeDefs = [
@@ -1337,32 +1403,64 @@ function renderBadges() {
 
     const user = getCurrentUser();
     if (!user) {
-        console.error('No user data available');
+        console.error('❌ No user data available');
         return;
     }
 
-    const unlockedBadges = new Set(user.unlockedBadges || []);
+    // Initialize unlockedBadges if it doesn't exist
+    if (!user.unlockedBadges) {
+        user.unlockedBadges = [];
+    }
+
+    const unlockedBadges = new Set(user.unlockedBadges);
+
+    console.log('=== ACHIEVEMENT CHECK START ===');
+    console.log('Current user stats:', user.stats);
+    console.log('Current unlocked badges:', user.unlockedBadges);
+    console.log('Session shown badges:', Array.from(sessionShownBadges));
+
+    let achievementsShown = 0;
 
     badgeDefs.forEach(badge => {
         const wasUnlocked = unlockedBadges.has(badge.key);
         const isUnlocked = badge.check(user);
         
-        // Debug logging
-        console.log('User unlockedBadges:', user.unlockedBadges);
-        console.log('Checking badge:', badge.key, 'isUnlocked:', isUnlocked, 'wasUnlocked:', wasUnlocked, 'sessionShown:', sessionShownBadges.has(badge.key));
+        console.log(`Badge: ${badge.key}`);
+        console.log(`  - isUnlocked: ${isUnlocked}`);
+        console.log(`  - wasUnlocked: ${wasUnlocked}`);
+        console.log(`  - sessionShown: ${sessionShownBadges.has(badge.key)}`);
         
-        // Only show popup for badges not in unlockedBadges and not already shown in this session
+        // Show popup for newly unlocked badges that haven't been shown this session
         if (isUnlocked && !wasUnlocked && !sessionShownBadges.has(badge.key)) {
-            if (badge.key !== 'custom' || (user.unlockedBadges && user.unlockedBadges.length === 0)) {
+            console.log(`🎉 SHOWING ACHIEVEMENT POPUP for: ${badge.label}`);
+            achievementsShown++;
+            
+            // Special handling for custom badge - only show if no other badges are unlocked
+            if (badge.key === 'custom') {
+                const otherUnlockedBadges = user.unlockedBadges.filter(key => key !== 'custom');
+                if (otherUnlockedBadges.length === 0) {
+                    showAchievementPopup(badge);
+                }
+            } else {
+                // Show popup for all other badges immediately
                 showAchievementPopup(badge);
             }
-            if (!user.unlockedBadges) user.unlockedBadges = [];
+            
+            // Add to unlocked badges
             if (!user.unlockedBadges.includes(badge.key)) {
                 user.unlockedBadges.push(badge.key);
             }
+            
             // Immediately update localStorage cache
             localStorage.setItem('currentUser', JSON.stringify(user));
+            
+            // Save to server (async)
             saveCurrentUser(user);
+            
+            // Update stats display
+            updateStatsDisplay(user.stats);
+            
+            // Mark as shown in this session
             sessionShownBadges.add(badge.key);
         }
 
@@ -1373,168 +1471,195 @@ function renderBadges() {
             <span class="badge-emoji">${badge.emoji}</span>
             <span class="badge-label">${badge.label}</span>
         `;
-        badgeDiv.addEventListener('click', function(e) {
-            e.stopPropagation();
-            showBadgePopup(badge, isUnlocked);
-        });
+        
+        // Only add click handler for unlocked badges
+        if (isUnlocked) {
+            badgeDiv.addEventListener('click', function(e) {
+                e.stopPropagation();
+                showBadgePopup(badge, isUnlocked);
+            });
+            badgeDiv.style.cursor = 'pointer';
+        } else {
+            // For locked badges, show a different cursor and add shake animation on click
+            badgeDiv.style.cursor = 'not-allowed';
+            badgeDiv.addEventListener('click', function(e) {
+                e.stopPropagation();
+                // Add shake animation to indicate it's locked
+                this.style.animation = 'shake 0.5s ease-in-out';
+                setTimeout(() => {
+                    this.style.animation = '';
+                }, 500);
+            });
+        }
+        
         badgesList.appendChild(badgeDiv);
     });
+    
+    console.log(`=== ACHIEVEMENT CHECK END === (${achievementsShown} achievements shown)`);
 }
 
 function showBadgePopup(badge, unlocked) {
-    // Remove any existing popup
-    const existing = document.getElementById('badge-popup-overlay');
-    if (existing) existing.remove();
-    // Create overlay
-    const overlay = document.createElement('div');
-    overlay.id = 'badge-popup-overlay';
-    overlay.style.position = 'fixed';
-    overlay.style.top = 0;
-    overlay.style.left = 0;
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
-    overlay.style.background = 'rgba(0,0,0,0.18)';
-    overlay.style.zIndex = 9999;
-    overlay.style.display = 'flex';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-    overlay.style.animation = 'fadeIn 0.3s ease forwards';
+    if (unlocked == true) {
+        const existing = document.getElementById('badge-popup-overlay');
+        if (existing) existing.remove();
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'badge-popup-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = 0;
+        overlay.style.left = 0;
+        overlay.style.width = '100vw';
+        overlay.style.height = '100vh';
+        overlay.style.background = 'rgba(0,0,0,0.18)';
+        overlay.style.zIndex = 9999;
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.animation = 'fadeIn 0.3s ease forwards';
 
-    // Create popup
-    const popup = document.createElement('div');
-    popup.className = 'badge-popup';
-    popup.style.background = unlocked ? 'linear-gradient(135deg, #fff7e8 60%, #bfe3e0 100%)' : 'linear-gradient(135deg, #e3e3e3 60%, #e0e7ef 100%)';
-    popup.style.border = unlocked ? '3px solid #76A5AF' : '3px dashed #bfc9d9';
-    popup.style.borderRadius = '22px';
-    popup.style.boxShadow = '0 8px 32px rgba(118, 165, 175, 0.18)';
-    popup.style.padding = '32px 36px 28px 36px';
-    popup.style.display = 'flex';
-    popup.style.flexDirection = 'column';
-    popup.style.alignItems = 'center';
-    popup.style.position = 'relative';
-    popup.style.minWidth = '260px';
-    popup.style.maxWidth = '90vw';
-    popup.style.textAlign = 'center';
-    popup.style.animation = 'slideUp 0.5s ease forwards';
+        // Create popup
+        const popup = document.createElement('div');
+        popup.className = 'badge-popup';
+        popup.style.background = unlocked ? 'linear-gradient(135deg, #fff7e8 60%, #bfe3e0 100%)' : 'linear-gradient(135deg, #e3e3e3 60%, #e0e7ef 100%)';
+        popup.style.border = unlocked ? '3px solid #76A5AF' : '3px dashed #bfc9d9';
+        popup.style.borderRadius = '22px';
+        popup.style.boxShadow = '0 8px 32px rgba(118, 165, 175, 0.18)';
+        popup.style.padding = '32px 36px 28px 36px';
+        popup.style.display = 'flex';
+        popup.style.flexDirection = 'column';
+        popup.style.alignItems = 'center';
+        popup.style.position = 'relative';
+        popup.style.minWidth = '260px';
+        popup.style.maxWidth = '90vw';
+        popup.style.textAlign = 'center';
+        popup.style.animation = 'slideUp 0.5s ease forwards';
 
-    // Add styles for animations
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = `
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes slideUp {
-            from { 
-                opacity: 0;
-                transform: translateY(20px);
+        // Add styles for animations
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
             }
-            to { 
-                opacity: 1;
-                transform: translateY(0);
+            @keyframes slideUp {
+                from { 
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to { 
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
-        }
-        @keyframes confetti {
-            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(styleSheet);
+            @keyframes confetti {
+                0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+                100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
 
-    // Add confetti effect
-    for (let i = 0; i < 30; i++) {
-        const confetti = document.createElement('div');
-        confetti.style.position = 'absolute';
-        confetti.style.width = '8px';
-        confetti.style.height = '8px';
-        confetti.style.background = ['#76A5AF', '#EA9999', '#014240'][Math.floor(Math.random() * 3)];
-        confetti.style.borderRadius = '50%';
-        confetti.style.left = `${Math.random() * 100}%`;
-        confetti.style.top = '100%';
-        confetti.style.animation = `confetti ${1 + Math.random() * 2}s ease-out forwards`;
-        confetti.style.animationDelay = `${Math.random() * 0.5}s`;
-        popup.appendChild(confetti);
+        // Add confetti effect
+        for (let i = 0; i < 30; i++) {
+            const confetti = document.createElement('div');
+            confetti.style.position = 'absolute';
+            confetti.style.width = '8px';
+            confetti.style.height = '8px';
+            confetti.style.background = ['#76A5AF', '#EA9999', '#014240'][Math.floor(Math.random() * 3)];
+            confetti.style.borderRadius = '50%';
+            confetti.style.left = `${Math.random() * 100}%`;
+            confetti.style.top = '100%';
+            confetti.style.animation = `confetti ${1 + Math.random() * 2}s ease-out forwards`;
+            confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+            popup.appendChild(confetti);
+        }
+
+        // Emoji
+        const emoji = document.createElement('span');
+        emoji.className = 'badge-emoji';
+        emoji.textContent = badge.emoji;
+        emoji.style.fontSize = '3.2rem';
+        emoji.style.margin = '18px 0 10px 0';
+        popup.appendChild(emoji);
+
+        // Title
+        const title = document.createElement('div');
+        title.textContent = 'Achievement Unlocked!';
+        title.style.fontFamily = "'DynaPuff', cursive, 'Wix Madefor Display', sans-serif";
+        title.style.fontSize = '1.4rem';
+        title.style.color = '#014240';
+        title.style.fontWeight = 'bold';
+        title.style.marginBottom = '8px';
+        popup.appendChild(title);
+
+        // Badge name
+        const badgeName = document.createElement('div');
+        badgeName.className = 'badge-label';
+        badgeName.textContent = badge.label;
+        badgeName.style.fontSize = '1.25rem';
+        badgeName.style.margin = '0 0 10px 0';
+        badgeName.style.background = 'linear-gradient(90deg, #76A5AF 0%, #EA9999 100%)';
+        badgeName.style.color = '#fff';
+        badgeName.style.fontWeight = 'bold';
+        badgeName.style.borderRadius = '18px';
+        badgeName.style.padding = '8px 18px 7px 18px';
+        badgeName.style.boxShadow = '0 2px 8px #bfe3e044';
+        badgeName.style.border = '1.5px solid #fff7e8';
+        badgeName.style.display = 'inline-block';
+        popup.appendChild(badgeName);
+
+        // Description
+        const desc = document.createElement('div');
+        desc.textContent = badge.desc;
+        desc.style.fontFamily = "'Wix Madefor Display', sans-serif";
+        desc.style.fontSize = '1.05rem';
+        desc.style.color = '#014240';
+        desc.style.margin = '10px 0 0 0';
+        desc.style.padding = '0 8px';
+        desc.style.lineHeight = '1.4';
+        desc.style.maxWidth = '260px';
+        popup.appendChild(desc);
+
+        // Close button
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '×';
+        closeBtn.style.position = 'absolute';
+        closeBtn.style.top = '12px';
+        closeBtn.style.right = '18px';
+        closeBtn.style.background = 'none';
+        closeBtn.style.border = 'none';
+        closeBtn.style.fontSize = '2rem';
+        closeBtn.style.color = '#EA9999';
+        closeBtn.style.cursor = 'pointer';
+        closeBtn.style.fontWeight = 'bold';
+        closeBtn.style.lineHeight = '1';
+        closeBtn.addEventListener('click', () => overlay.remove());
+        popup.appendChild(closeBtn);
+
+        overlay.appendChild(popup);
+        document.body.appendChild(overlay);
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.style.animation = 'fadeOut 0.3s ease forwards';
+                setTimeout(() => overlay.remove(), 300);
+            }
+        }, 5000);
     }
-
-    // Emoji
-    const emoji = document.createElement('span');
-    emoji.className = 'badge-emoji';
-    emoji.textContent = badge.emoji;
-    emoji.style.fontSize = '3.2rem';
-    emoji.style.margin = '18px 0 10px 0';
-    popup.appendChild(emoji);
-
-    // Title
-    const title = document.createElement('div');
-    title.textContent = 'Achievement Unlocked!';
-    title.style.fontFamily = "'DynaPuff', cursive, 'Wix Madefor Display', sans-serif";
-    title.style.fontSize = '1.4rem';
-    title.style.color = '#014240';
-    title.style.fontWeight = 'bold';
-    title.style.marginBottom = '8px';
-    popup.appendChild(title);
-
-    // Badge name
-    const badgeName = document.createElement('div');
-    badgeName.className = 'badge-label';
-    badgeName.textContent = badge.label;
-    badgeName.style.fontSize = '1.25rem';
-    badgeName.style.margin = '0 0 10px 0';
-    badgeName.style.background = 'linear-gradient(90deg, #76A5AF 0%, #EA9999 100%)';
-    badgeName.style.color = '#fff';
-    badgeName.style.fontWeight = 'bold';
-    badgeName.style.borderRadius = '18px';
-    badgeName.style.padding = '8px 18px 7px 18px';
-    badgeName.style.boxShadow = '0 2px 8px #bfe3e044';
-    badgeName.style.border = '1.5px solid #fff7e8';
-    badgeName.style.display = 'inline-block';
-    popup.appendChild(badgeName);
-
-    // Description
-    const desc = document.createElement('div');
-    desc.textContent = badge.desc;
-    desc.style.fontFamily = "'Wix Madefor Display', sans-serif";
-    desc.style.fontSize = '1.05rem';
-    desc.style.color = '#014240';
-    desc.style.margin = '10px 0 0 0';
-    desc.style.padding = '0 8px';
-    desc.style.lineHeight = '1.4';
-    desc.style.maxWidth = '260px';
-    popup.appendChild(desc);
-
-    // Close button
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '×';
-    closeBtn.style.position = 'absolute';
-    closeBtn.style.top = '12px';
-    closeBtn.style.right = '18px';
-    closeBtn.style.background = 'none';
-    closeBtn.style.border = 'none';
-    closeBtn.style.fontSize = '2rem';
-    closeBtn.style.color = '#EA9999';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.style.fontWeight = 'bold';
-    closeBtn.style.lineHeight = '1';
-    closeBtn.addEventListener('click', () => overlay.remove());
-    popup.appendChild(closeBtn);
-
-    overlay.appendChild(popup);
-    document.body.appendChild(overlay);
-
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (overlay.parentNode) {
-            overlay.style.animation = 'fadeOut 0.3s ease forwards';
-            setTimeout(() => overlay.remove(), 300);
-        }
-    }, 5000);
 }
 
 // Show achievement popup
 function showAchievementPopup(badge) {
+    console.log('🎉 showAchievementPopup called for:', badge.label);
+    
     // Remove any existing popup
     const existing = document.getElementById('achievement-popup-overlay');
-    if (existing) existing.remove();
+    if (existing) {
+        console.log('Removing existing popup');
+        existing.remove();
+    }
+
+    console.log('Creating new achievement popup overlay...');
 
     // Create overlay
     const overlay = document.createElement('div');
@@ -1551,7 +1676,7 @@ function showAchievementPopup(badge) {
     overlay.style.justifyContent = 'center';
     overlay.style.animation = 'fadeIn 0.3s ease forwards';
 
-    // Create popup
+    // Create popup 
     const popup = document.createElement('div');
     popup.className = 'achievement-popup';
     popup.style.background = 'linear-gradient(135deg, #fff7e8 60%, #bfe3e0 100%)';
@@ -1575,6 +1700,10 @@ function showAchievementPopup(badge) {
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
         @keyframes slideUp {
             from { 
                 opacity: 0;
@@ -1588,6 +1717,10 @@ function showAchievementPopup(badge) {
         @keyframes confetti {
             0% { transform: translateY(0) rotate(0deg); opacity: 1; }
             100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
     `;
     document.head.appendChild(styleSheet);
@@ -1613,6 +1746,7 @@ function showAchievementPopup(badge) {
     emoji.textContent = badge.emoji;
     emoji.style.fontSize = '3.2rem';
     emoji.style.margin = '18px 0 10px 0';
+    emoji.style.animation = 'pulse 2s ease-in-out infinite';
     popup.appendChild(emoji);
 
     // Title
@@ -1672,9 +1806,12 @@ function showAchievementPopup(badge) {
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 
+    console.log('Achievement popup added to DOM');
+
     // Auto-remove after 5 seconds
     setTimeout(() => {
         if (overlay.parentNode) {
+            console.log('Auto-removing achievement popup');
             overlay.style.animation = 'fadeOut 0.3s ease forwards';
             setTimeout(() => overlay.remove(), 300);
         }
@@ -1684,4 +1821,66 @@ function showAchievementPopup(badge) {
 document.addEventListener('DOMContentLoaded', function() {
     renderBadges();
 });
-  
+
+async function loadJournalEntries() {
+    const username = localStorage.getItem('username');
+    if (!username) return;
+
+    // Get entries from localStorage
+    const localStorageKey = `${username}_journal_entries`;
+    let entries = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
+    
+    // Sort entries by date descending (newest first)
+    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Removed the slice(0, 6) to allow unlimited entries
+    localStorage.setItem(localStorageKey, JSON.stringify(entries));
+    
+    // Display entries from localStorage immediately
+    const journalEntriesDiv = document.getElementById('journal-entries');
+    if (journalEntriesDiv) {
+        journalEntriesDiv.innerHTML = '';
+        entries.forEach(entry => {
+            const entryElement = document.createElement('div');
+            entryElement.className = 'journal-entry';
+            entryElement.innerHTML = `
+                <p><strong>${new Date(entry.date).toLocaleString()}</strong></p>
+                <p>${entry.text}</p>
+                ${entry.mood ? `<p>Mood: ${entry.mood}</p>` : ''}
+            `;
+            journalEntriesDiv.appendChild(entryElement);
+        });
+    }
+
+    try {
+        // Fetch from MongoDB in the background
+        const response = await fetch(`${BACKEND_URL}/api/users/${username}/journal`);
+        if (!response.ok) {
+            throw new Error('Failed to load journal entries');
+        }
+        const data = await response.json();
+        
+        // Update localStorage with MongoDB data (no limit)
+        if (data.journalEntries && data.journalEntries.length > 0) {
+            // Sort MongoDB data by date descending
+            data.journalEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            localStorage.setItem(localStorageKey, JSON.stringify(data.journalEntries));
+            
+            // Update display with MongoDB data
+            if (journalEntriesDiv) {
+                journalEntriesDiv.innerHTML = '';
+                data.journalEntries.forEach(entry => {
+                    const entryElement = document.createElement('div');
+                    entryElement.className = 'journal-entry';
+                    entryElement.innerHTML = `
+                <p><strong>${new Date(entry.date).toLocaleString()}</strong></p>
+                <p>${entry.text}</p>
+                ${entry.mood ? `<p>Mood: ${entry.mood}</p>` : ''}
+            `;
+                    journalEntriesDiv.appendChild(entryElement);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error loading journal entries:', error);
+    }
+}
