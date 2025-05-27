@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Achievement Test - LYF180</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #76A5AF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #014240;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .console-log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Achievement System Test</h1>
+    
+    <div class="test-section">
+        <h2>🚀 Quick Test</h2>
+        <p>Use these buttons to test the achievement system:</p>
+        <button class="test-button" onclick="testFirstGoal()">Test First Goal Achievement</button>
+        <button class="test-button" onclick="testFirstHabit()">Test First Habit Achievement</button>
+        <button class="test-button" onclick="test5Goals()">Test 5 Goals Achievement</button>
+        <button class="test-button" onclick="clearTestData()">Clear Test Data</button>
+        <button class="test-button" onclick="openMainApp()">Open Main App</button>
+        <div id="test-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Current Status</h2>
+        <div id="current-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Debug Console</h2>
+        <p>Real-time console logs from the achievement system:</p>
+        <div id="console-logs" class="console-log">Waiting for logs...</div>
+        <button class="test-button" onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Test Instructions</h2>
+        <ol>
+            <li><strong>Click "Open Main App"</strong> to open the LYF180 app in a new tab</li>
+            <li><strong>Log in</strong> with any test account</li>
+            <li><strong>Come back to this tab</strong> and click a test button</li>
+            <li><strong>Go back to the main app</strong> and refresh or complete a real goal/habit</li>
+            <li><strong>Watch for achievement popup</strong> - it should appear immediately!</li>
+        </ol>
+        <div class="status warning">
+            <strong>Important:</strong> Make sure both tabs are from the same domain (localhost:3000) so they share localStorage.
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🏆 Achievement Requirements</h2>
+        <div class="status info">
+            <strong>🌱 First Goal!</strong> - Complete your first goal (goalsCompleted >= 1)<br>
+            <strong>🎯 5 Goals!</strong> - Complete 5 goals (goalsCompleted >= 5)<br>
+            <strong>💧 First Habit!</strong> - Complete your first habit (habitsCompleted >= 1)<br>
+            <strong>🌟 10 Habits!</strong> - Complete 10 habits (habitsCompleted >= 10)<br>
+            <strong>🔥 3 Day Streak!</strong> - 3 day streak (streak >= 3)<br>
+            <strong>🏆 7 Day Streak!</strong> - 7 day streak (streak >= 7)<br>
+            <strong>🦄 Amaze-Balls!</strong> - Just for being you! (always unlocked)
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+
+        // Override console.log to capture logs
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const logMessage = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            if (logMessage.includes('🎯') || logMessage.includes('✅') || logMessage.includes('🔍') || 
+                logMessage.includes('🎉') || logMessage.includes('ACHIEVEMENT') || logMessage.includes('renderBadges')) {
+                logs.push(`${new Date().toLocaleTimeString()}: ${logMessage}`);
+                updateConsole();
+            }
+        };
+
+        function updateConsole() {
+            const consoleDiv = document.getElementById('console-logs');
+            consoleDiv.textContent = logs.slice(-20).join('\n'); // Show last 20 logs
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        function clearLogs() {
+            logs = [];
+            updateConsole();
+        }
+
+        function testFirstGoal() {
+            console.log('🧪 Testing First Goal Achievement');
+            const user = {
+                stats: { goalsCompleted: 1, habitsCompleted: 0, streak: 0 },
+                unlockedBadges: []
+            };
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            
+            document.getElementById('test-status').innerHTML = 
+                '<div class="status success">✅ Set stats to trigger First Goal achievement! Go to main app and refresh or complete another goal.</div>';
+            updateStatus();
+        }
+
+        function testFirstHabit() {
+            console.log('🧪 Testing First Habit Achievement');
+            const user = {
+                stats: { goalsCompleted: 0, habitsCompleted: 1, streak: 0 },
+                unlockedBadges: []
+            };
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            
+            document.getElementById('test-status').innerHTML = 
+                '<div class="status success">✅ Set stats to trigger First Habit achievement! Go to main app and refresh or complete another habit.</div>';
+            updateStatus();
+        }
+
+        function test5Goals() {
+            console.log('🧪 Testing 5 Goals Achievement');
+            const user = {
+                stats: { goalsCompleted: 5, habitsCompleted: 0, streak: 0 },
+                unlockedBadges: ['firstGoal'] // Already have first goal
+            };
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            
+            document.getElementById('test-status').innerHTML = 
+                '<div class="status success">✅ Set stats to trigger 5 Goals achievement! Go to main app and refresh or complete another goal.</div>';
+            updateStatus();
+        }
+
+        function clearTestData() {
+            console.log('🧹 Clearing test data');
+            localStorage.removeItem('currentUser');
+            document.getElementById('test-status').innerHTML = 
+                '<div class="status info">🧹 Test data cleared. You can now test fresh achievements.</div>';
+            updateStatus();
+        }
+
+        function openMainApp() {
+            window.open('http://localhost:3000', '_blank');
+        }
+
+        function updateStatus() {
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const statusDiv = document.getElementById('current-status');
+            
+            if (user.stats) {
+                statusDiv.innerHTML = `
+                    <div class="status info">
+                        <strong>📊 Current Stats:</strong><br>
+                        Goals Completed: ${user.stats.goalsCompleted || 0}<br>
+                        Habits Completed: ${user.stats.habitsCompleted || 0}<br>
+                        Streak: ${user.stats.streak || 0}<br>
+                        Unlocked Badges: ${user.unlockedBadges ? user.unlockedBadges.join(', ') : 'None'}<br>
+                        <br>
+                        <strong>🎯 Next Achievements:</strong><br>
+                        ${getNextAchievements(user)}
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = '<div class="status warning">⚠️ No user data found. Please log in to the main app first.</div>';
+            }
+        }
+
+        function getNextAchievements(user) {
+            const achievements = [];
+            const stats = user.stats || {};
+            const unlocked = new Set(user.unlockedBadges || []);
+
+            if (stats.goalsCompleted < 1 && !unlocked.has('firstGoal')) {
+                achievements.push('🌱 First Goal (need 1 goal)');
+            } else if (stats.goalsCompleted < 5 && !unlocked.has('goal5')) {
+                achievements.push(`🎯 5 Goals (need ${5 - stats.goalsCompleted} more goals)`);
+            }
+
+            if (stats.habitsCompleted < 1 && !unlocked.has('firstHabit')) {
+                achievements.push('💧 First Habit (need 1 habit)');
+            } else if (stats.habitsCompleted < 10 && !unlocked.has('habit10')) {
+                achievements.push(`🌟 10 Habits (need ${10 - stats.habitsCompleted} more habits)`);
+            }
+
+            if (stats.streak < 3 && !unlocked.has('streak3')) {
+                achievements.push(`🔥 3 Day Streak (need ${3 - stats.streak} more days)`);
+            } else if (stats.streak < 7 && !unlocked.has('streak7')) {
+                achievements.push(`🏆 7 Day Streak (need ${7 - stats.streak} more days)`);
+            }
+
+            return achievements.length > 0 ? achievements.join('<br>') : 'All achievements unlocked! 🎉';
+        }
+
+        // Update status on load and every 2 seconds
+        updateStatus();
+        setInterval(updateStatus, 2000);
+
+        // Listen for storage changes from other tabs
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'currentUser') {
+                console.log('🔄 User data changed in another tab');
+                updateStatus();
+            }
+        });
+    </script>
+</body>
+</html> 
