@@ -1,6 +1,4 @@
-// Determine if we're running locally or in production
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const BACKEND_URL = isLocalhost ? "http://localhost:3000" : "https://cs180-lyf180-project.onrender.com";
+const BACKEND_URL = "https://cs180-lyf180-project.onrender.com";
 
 // Logout function
 function logout() {
@@ -75,7 +73,6 @@ async function saveCurrentUser(userData) {
         if (!username) return;
 
         // Only send updatable fields
-        // EXCLUDE reflections to prevent overwriting journal entries
         const updatableFields = {
             goals: userData.goals,
             habits: userData.habits,
@@ -83,6 +80,7 @@ async function saveCurrentUser(userData) {
             moods: userData.moods,
             reminders: userData.reminders,
             suggestions: userData.suggestions,
+            reflections: userData.reflections,
             unlockedBadges: userData.unlockedBadges,
         };
 
@@ -103,46 +101,6 @@ async function saveCurrentUser(userData) {
         }
     } catch (error) {
         console.error('Error saving user data:', error);
-    }
-}
-
-async function fetchQuotes() {
-    try {
-        const response = await fetch('quotes.csv');
-        const text = await response.text();
-        const quotes = parseQuotesCSV(text);
-        return quotes;
-    } catch (error) {
-        console.error('Error fetching quotes:', error);
-        return [];
-    }
-}
-
-// Function to parse CSV text into an array of quotes
-function parseQuotesCSV(csvText) {
-    const lines = csvText.split('\n').slice(1); // Skip header
-    const quotes = lines.map(line => {
-        const [author, text] = line.split('","').map(s => s.replace(/"/g, ''));
-        return { author, text };
-    }).filter(quote => quote.author && quote.text); // Filter out invalid quotes
-    return quotes;
-}
-
-// Function to get a random quote
-function getRandomQuote(quotes) {
-    const randomIndex = Math.floor(Math.random() * quotes.length);
-    return quotes[randomIndex];
-}
-
-// Fetch and display a random quote
-async function displayRandomQuote() {
-    const quotes = await fetchQuotes();
-    if (quotes.length > 0) {
-        const randomQuote = getRandomQuote(quotes);
-        const quoteElement = document.getElementById('test-quote');
-        if (quoteElement) {
-            quoteElement.textContent = `"${randomQuote.text}" -- ${randomQuote.author}`;
-        }
     }
 }
 
@@ -228,7 +186,21 @@ async function loadUserData() {
         renderBadges();
 
         // Fetch and display quote
-        await displayRandomQuote();
+        try {
+            const quoteResponse = await fetch(`${BACKEND_URL}/api/quote`);
+            if (!quoteResponse.ok) throw new Error(`HTTP ${quoteResponse.status}`);
+            const quoteData = await quoteResponse.json();
+            const quoteElement = document.getElementById('test-quote');
+            if (quoteElement) {
+                quoteElement.textContent = quoteData.quote || quoteData.error;
+            }
+        } catch (error) {
+            console.error('Error fetching quote:', error);
+            const quoteElement = document.getElementById('test-quote');
+            if (quoteElement) {
+                quoteElement.textContent = "Every day is a new beginning.";
+            }
+        }
 
         // Initialize reminders
         if (user.reminders) {
@@ -267,7 +239,7 @@ function updateStatsDisplay(stats) {
 
     statsDiv.innerHTML = `
         <div class="stats-container">
-            <h6 class="stats-title">Your Stats</h6>
+            <h6 class="stats-title">Your Progress</h6>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">🎯</div>
@@ -727,7 +699,7 @@ function handleHabitOverlayClick(event) {
 }
 
 // Add mood tracking
-async function addMood(mood, journalEntry) {
+async function addMood(mood) {
     try {
         const user = getCurrentUser();
         if (!user) {
@@ -761,46 +733,56 @@ async function addMood(mood, journalEntry) {
         // Update the display
         updateMoodDisplay();
         
-        // Generate suggestions based on the journal entry and mood
-        if (journalEntry && journalEntry.trim()) {
-            await generateSuggestionsFromJournal(journalEntry);
-        } else {
-            await generateSuggestions();
-        }
+        // Generate and update suggestions with the new mood
+        await generateSuggestions();
         updateSuggestionsDisplay();
     } catch (error) {
         console.error('Error adding mood:', error);
     }
 }
 
-// Function to show the mood selector and journal entry
+// Show mood selector
 function showMoodSelector(event) {
     // Remove any existing mood selector
     const existingSelector = document.querySelector('.mood-selector');
     if (existingSelector) existingSelector.remove();
 
-    // Create mood selector
+    // Try to use the event target (for Change button), else fallback to mood button
+    let anchorBtn = null;
+    if (event && event.target) {
+        anchorBtn = event.target;
+    } else {
+        anchorBtn = document.querySelector('.mood-btn');
+    }
     const moodSelector = document.createElement('div');
     moodSelector.className = 'mood-selector';
     moodSelector.innerHTML = `
         <div class="mood-options">
-            <button onclick="selectMood('Great', this)" class="mood-option">😊 Great</button>
-            <button onclick="selectMood('Good', this)" class="mood-option">🙂 Good</button>
-            <button onclick="selectMood('Okay', this)" class="mood-option">😐 Okay</button>
-            <button onclick="selectMood('Bad', this)" class="mood-option">😔 Bad</button>
-            <button onclick="selectMood('Terrible', this)" class="mood-option">😢 Terrible</button>
+            <button onclick="selectMood('Great')" class="mood-option">😊 Great</button>
+            <button onclick="selectMood('Good')" class="mood-option">🙂 Good</button>
+            <button onclick="selectMood('Okay')" class="mood-option">😐 Okay</button>
+            <button onclick="selectMood('Bad')" class="mood-option">😔 Bad</button>
+            <button onclick="selectMood('Terrible')" class="mood-option">😢 Terrible</button>
         </div>
-        <textarea id="journal-entry" placeholder="Write your journal entry here..."></textarea>
-        <button id="submit-mood" onclick="submitMoodAndJournal(), closeMoodSelector()">Submit</button>
     `;
 
-    // Position the selector
-    const rect = event.target.getBoundingClientRect();
-    moodSelector.style.position = 'absolute';
-    moodSelector.style.left = rect.left + window.scrollX + 'px';
-    moodSelector.style.top = rect.bottom + window.scrollY + 8 + 'px';
-    moodSelector.style.zIndex = 2000;
-    document.body.appendChild(moodSelector);
+    if (anchorBtn) {
+        // Position the selector right below the button
+        const rect = anchorBtn.getBoundingClientRect();
+        moodSelector.style.position = 'absolute';
+        moodSelector.style.left = rect.left + window.scrollX + 'px';
+        moodSelector.style.top = rect.bottom + window.scrollY + 8 + 'px';
+        moodSelector.style.zIndex = 2000;
+        document.body.appendChild(moodSelector);
+    } else {
+        // Fallback: center on screen
+        moodSelector.style.position = 'fixed';
+        moodSelector.style.top = '50%';
+        moodSelector.style.left = '50%';
+        moodSelector.style.transform = 'translate(-50%, -50%)';
+        moodSelector.style.zIndex = 2000;
+        document.body.appendChild(moodSelector);
+    }
 
     // Add click outside handler to close the selector
     setTimeout(() => {
@@ -812,229 +794,13 @@ function showMoodSelector(event) {
         });
     }, 0);
 }
-function closeMoodSelector() {
+
+// Helper for mood selection
+async function selectMood(mood) {
+    await addMood(mood);
+    // Remove the mood selector popup
     const moodSelector = document.querySelector('.mood-selector');
     if (moodSelector) moodSelector.remove();
-}
-// Global variable to store the selected mood
-let selectedMood = '';
-
-// Function to select mood
-function selectMood(mood, button) {
-    selectedMood = mood; // Store the selected mood
-    console.log(`Selected mood: ${selectedMood}`); // Debugging line
-
-    // Remove 'selected' class from all buttons
-    const moodButtons = document.querySelectorAll('.mood-option');
-    moodButtons.forEach(btn => btn.classList.remove('selected'));
-
-    // Add 'selected' class to the clicked button
-    button.classList.add('selected');
-}
-
-// Function to submit mood and journal entry
-async function submitMoodAndJournal() {
-    const journalEntry = document.getElementById("journal-entry").value;
-    const moodToSave = selectedMood; // Save the current mood before resetting
-    console.log('Submitting mood and journal:', { selectedMood, journalEntry });
-    
-    if (!selectedMood) {
-        alert('Please select a mood before submitting.');
-        return;
-    }
-    if (!journalEntry.trim()) {
-        console.error('No journal entry provided');
-        alert('Please enter a journal entry before submitting.');
-        return;
-    }
-
-    // Create new entry object
-    const newEntry = {
-        date: new Date().toISOString(),
-        text: journalEntry,
-        mood: selectedMood
-    };
-
-    // Get existing entries from localStorage or initialize empty array
-    const username = localStorage.getItem('username');
-    const localStorageKey = `${username}_journal_entries`;
-    let entries = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
-    
-    // Add new entry to the beginning of the array
-    entries.unshift(newEntry);
-    // Sort entries by date descending (latest first)
-    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-    // Save to localStorage
-    localStorage.setItem(localStorageKey, JSON.stringify(entries));
-    
-    // Update display immediately
-    const journalEntriesDiv = document.getElementById('journal-entries');
-    if (journalEntriesDiv) {
-        journalEntriesDiv.innerHTML = '';
-        entries.forEach(entry => {
-            const entryElement = document.createElement('div');
-            entryElement.className = 'journal-entry';
-            entryElement.innerHTML = `
-                <p><strong>${new Date(entry.date).toLocaleString()}</strong></p>
-                <p>${entry.text}</p>
-                <p>Mood: ${entry.mood}</p>
-            `;
-            journalEntriesDiv.appendChild(entryElement);
-        });
-    }
-    
-    // Also refresh the journal entries list to ensure the latest is shown
-    loadJournalEntries();
-    
-    // Clear the form
-    document.getElementById("journal-entry").value = '';
-    selectedMood = ''; // Reset the selected mood
-    updateMoodDisplay(); // Update the mood display
-
-    // Show success message
-    const successMessage = document.createElement('div');
-    successMessage.className = 'success-message';
-    successMessage.textContent = 'Mood and journal entry saved successfully!';
-    successMessage.style.position = 'fixed';
-    successMessage.style.top = '20px';
-    successMessage.style.left = '50%';
-    successMessage.style.transform = 'translateX(-50%)';
-    successMessage.style.backgroundColor = '#4CAF50';
-    successMessage.style.color = 'white';
-    successMessage.style.padding = '10px 20px';
-    successMessage.style.borderRadius = '5px';
-    successMessage.style.zIndex = '1000';
-    document.body.appendChild(successMessage);
-
-    // Remove success message after 3 seconds
-    setTimeout(() => {
-        successMessage.remove();
-    }, 3000);
-
-    // Save to MongoDB in the background
-    try {
-        // Save mood to MongoDB
-        console.log('[DEBUG] Sending mood to:', `${BACKEND_URL}/api/users/${username}/mood`, 'Payload:', { mood: moodToSave });
-        const moodRes = await fetch(`${BACKEND_URL}/api/users/${username}/mood`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ mood: moodToSave })
-        });
-        const moodResBody = await moodRes.json().catch(() => ({}));
-        console.log('[DEBUG] Mood response:', moodRes.status, moodResBody);
-
-        // Save journal entry to MongoDB
-        console.log('[DEBUG] Sending journal entry to:', `${BACKEND_URL}/api/users/${username}/journal`, 'Payload:', { journalEntry, mood: moodToSave });
-        const journalRes = await fetch(`${BACKEND_URL}/api/users/${username}/journal`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ journalEntry, mood: moodToSave })
-        });
-        const journalResBody = await journalRes.json().catch(() => ({}));
-        console.log('[DEBUG] Journal response:', journalRes.status, journalResBody);
-        
-        // After successful MongoDB save, sync localStorage with the server response
-        // This ensures localStorage matches exactly what's in MongoDB
-        setTimeout(async () => {
-            try {
-                const syncResponse = await fetch(`${BACKEND_URL}/api/users/${username}/journal`);
-                if (syncResponse.ok) {
-                    const syncData = await syncResponse.json();
-                    if (syncData.journalEntries) {
-                        // Update localStorage with the exact data from MongoDB
-                        syncData.journalEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        localStorage.setItem(localStorageKey, JSON.stringify(syncData.journalEntries));
-                        // Update display with synced data
-                        loadJournalEntries();
-                    }
-                }
-            } catch (syncError) {
-                console.error('[DEBUG] Error syncing with MongoDB:', syncError);
-            }
-        }, 1000); // Small delay to ensure MongoDB has processed the save
-        
-    } catch (error) {
-        console.error('[DEBUG] Error saving to MongoDB:', error);
-        // Don't show error to user since we've already saved locally
-    }
-
-    // Always generate suggestions after submitting a journal entry
-    await generateSuggestionsFromJournal(journalEntry);
-    updateSuggestionsDisplay();
-
-    // After successful submission, reset selectedMood
-    selectedMood = '';
-}
-
-function extractKeywords(journalEntry) {
-    // Define a list of common stop words to ignore
-    const stopWords = new Set([
-        'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'as', 'at',
-        'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by', 'can', 'could',
-        'couldn\'t', 'did', 'didn\'t', 'do', 'does', 'doesn\'t', 'doing', 'don\'t', 'down', 'during', 'each',
-        'few', 'for', 'from', 'further', 'had', 'hadn\'t', 'has', 'hasn\'t', 'have', 'haven\'t', 'he', 'her',
-        'here', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'i', 'if', 'in', 'into', 'is', 'isn\'t',
-        'it', 'its', 'itself', 'just', 'll', 'm', 'ma', 'me', 'might', 'mightn\'t', 'more', 'most', 'must',
-        'mustn\'t', 'my', 'myself', 'needn\'t', 'no', 'nor', 'not', 'now', 'o', 'of', 'off', 'on', 'once',
-        'only', 'or', 'other', 'our', 'ours', 'ourselves', 'out', 'over', 'own', 're', 's', 'same', 'she',
-        'should', 'should\'ve', 'so', 'some', 'such', 't', 'than', 'that', 'the', 'their', 'theirs', 'them',
-        'themselves', 'then', 'there', 'these', 'they', 'this', 'those', 'through', 'to', 'too', 'under',
-        'until', 'up', 've', 'very', 'was', 'wasn\'t', 'we', 'were', 'weren\'t', 'what', 'when', 'where',
-        'which', 'while', 'who', 'whom', 'why', 'will', 'with', 'won\'t', 'would', 'wouldn\'t', 'you',
-        'your', 'yours', 'yourself', 'yourselves'
-    ]);
-
-    // Split the journal entry into words, convert to lowercase, and filter out stop words
-    const words = journalEntry
-        .toLowerCase() // Convert to lowercase
-        .match(/\b\w+\b/g) // Match words (alphanumeric)
-        .filter(word => !stopWords.has(word)); // Filter out stop words
-
-    // Get unique keywords
-    const uniqueKeywords = [...new Set(words)];
-
-    return uniqueKeywords;
-}
-
-// New function to generate suggestions based on journal entry
-async function generateSuggestionsFromJournal(journalEntry) {
-    try {
-        const response = await fetch(`${BACKEND_URL}/api/analyze-journal`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                journalEntry,
-                mood: selectedMood
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to analyze journal entry');
-        }
-
-        const data = await response.json();
-        
-        // Save suggestions to user data
-        const user = getCurrentUser();
-        user.suggestions = data.suggestions;
-        await saveCurrentUser(user);
-        
-        // Update the suggestions display
-        updateSuggestionsDisplay();
-    } catch (error) {
-        console.error('Error generating suggestions from journal:', error);
-        // Fallback to basic suggestions if API call fails
-        const user = getCurrentUser();
-        user.suggestions = ["Set a new goal or habit to get started!"];
-        await saveCurrentUser(user);
-        updateSuggestionsDisplay();
-    }
 }
 
 // Update mood display
@@ -1059,19 +825,11 @@ function updateMoodDisplay() {
                 <span>Today's Mood: <span style="font-size:1.5em;">${getMoodEmoji(todayMood.mood)}</span> ${todayMood.mood}</span>
                 <button onclick="showMoodSelector(event)" class="change-mood-btn">Change</button>
             </div>
-            <div id="journal-entries" class="journal-entries-container"></div>
         `;
-        
-        // Load journal entries after creating the container
-        loadJournalEntries();
     } else {
         moodContainer.innerHTML = `
             <button onclick="showMoodSelector(event)" class="mood-btn">How are you feeling today?</button>
-            <div id="journal-entries" class="journal-entries-container"></div>
         `;
-        
-        // Load journal entries after creating the container
-        loadJournalEntries();
     }
 }
 
@@ -1396,7 +1154,21 @@ window.addEventListener("DOMContentLoaded", async () => {
         });
 
         // Fetch and display quote
-         await displayRandomQuote();
+        try {
+            const quoteResponse = await fetch(`${BACKEND_URL}/api/quote`);
+            if (!quoteResponse.ok) throw new Error(`HTTP ${quoteResponse.status}`);
+            const quoteData = await quoteResponse.json();
+            const quoteElement = document.getElementById('test-quote');
+            if (quoteElement) {
+                quoteElement.textContent = quoteData.quote || quoteData.error;
+            }
+        } catch (err) {
+            console.error('Error fetching quote:', err);
+            const el = document.getElementById("test-quote");
+            if (el) {
+                el.textContent = "Couldn't load quote.";
+            }
+        }
 
         // Initialize mood tracking
         const user = await getCurrentUser();
@@ -1435,7 +1207,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         console.error('Error during initialization:', error);
     }
 });
-
 
 // Reflection functionality
 // Add a dropdown for previous reflections
@@ -1544,6 +1315,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Track which achievement popups have been shown in this session
 const sessionShownBadges = new Set();
+
 function renderBadges() {
     const badgesList = document.getElementById('badges-list');
     if (!badgesList) {
@@ -1553,7 +1325,6 @@ function renderBadges() {
     
     badgesList.innerHTML = '';
     
-    //badges 
     const badgeDefs = [
         { key: 'firstGoal', label: 'First Goal!', emoji: '🌱', desc: 'Complete your first goal', check: user => user.stats && user.stats.goalsCompleted >= 1 },
         { key: 'goal5', label: '5 Goals!', emoji: '🎯', desc: 'Complete 5 goals', check: user => user.stats && user.stats.goalsCompleted >= 5 },
@@ -1561,7 +1332,7 @@ function renderBadges() {
         { key: 'habit10', label: '10 Habits!', emoji: '🌟', desc: 'Complete 10 habits', check: user => user.stats && user.stats.habitsCompleted >= 10 },
         { key: 'streak3', label: '3 Day Streak!', emoji: '🔥', desc: '3 day streak', check: user => user.stats && user.stats.streak >= 3 },
         { key: 'streak7', label: '7 Day Streak!', emoji: '🏆', desc: '7 day streak', check: user => user.stats && user.stats.streak >= 7 },
-        { key: 'custom', label: "Amaze-Balls!", emoji: '🦄', desc: 'Just for being you!', check: user => true },
+        { key: 'custom', label: "Amaze-Balls!", emoji: '🦄', desc: 'Just for being you!', check: user => true }
     ];
 
     const user = getCurrentUser();
@@ -1611,8 +1382,7 @@ function renderBadges() {
 }
 
 function showBadgePopup(badge, unlocked) {
-//     // Remove any existing popup
-if(unlocked == true){
+    // Remove any existing popup
     const existing = document.getElementById('badge-popup-overlay');
     if (existing) existing.remove();
     // Create overlay
@@ -1759,7 +1529,6 @@ if(unlocked == true){
         }
     }, 5000);
 }
-}
 
 // Show achievement popup
 function showAchievementPopup(badge) {
@@ -1782,9 +1551,7 @@ function showAchievementPopup(badge) {
     overlay.style.justifyContent = 'center';
     overlay.style.animation = 'fadeIn 0.3s ease forwards';
 
-    // Create popup 
- 
-
+    // Create popup
     const popup = document.createElement('div');
     popup.className = 'achievement-popup';
     popup.style.background = 'linear-gradient(135deg, #fff7e8 60%, #bfe3e0 100%)';
@@ -1917,77 +1684,4 @@ function showAchievementPopup(badge) {
 document.addEventListener('DOMContentLoaded', function() {
     renderBadges();
 });
-
-async function loadJournalEntries() {
-    const username = localStorage.getItem('username');
-    if (!username) return;
-
-    // Get entries from localStorage
-    const localStorageKey = `${username}_journal_entries`;
-    let entries = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
-    
-    // Sort entries by date descending (newest first)
-    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-    // Removed the slice(0, 6) to allow unlimited entries
-    localStorage.setItem(localStorageKey, JSON.stringify(entries));
-    
-    // Display entries from localStorage immediately
-    const journalEntriesDiv = document.getElementById('journal-entries');
-    if (journalEntriesDiv) {
-        journalEntriesDiv.innerHTML = '';
-        entries.forEach(entry => {
-            const entryElement = document.createElement('div');
-            entryElement.className = 'journal-entry';
-            entryElement.innerHTML = `
-                <p><strong>${new Date(entry.date).toLocaleString()}</strong></p>
-                <p>${entry.text}</p>
-                ${entry.mood ? `<p>Mood: ${entry.mood}</p>` : ''}
-            `;
-            journalEntriesDiv.appendChild(entryElement);
-        });
-    }
-
-    try {
-        // Fetch from MongoDB in the background
-        const response = await fetch(`${BACKEND_URL}/api/users/${username}/journal`);
-        if (!response.ok) {
-            throw new Error('Failed to load journal entries');
-        }
-        const data = await response.json();
-        
-        // Update localStorage with MongoDB data (no limit)
-        if (data.journalEntries && data.journalEntries.length > 0) {
-            // Sort MongoDB data by date descending
-            data.journalEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
-            localStorage.setItem(localStorageKey, JSON.stringify(data.journalEntries));
-            
-            // Update display with MongoDB data
-            if (journalEntriesDiv) {
-                journalEntriesDiv.innerHTML = '';
-                data.journalEntries.forEach(entry => {
-                    const entryElement = document.createElement('div');
-                    entryElement.className = 'journal-entry';
-                    entryElement.innerHTML = `
-                        <p><strong>${new Date(entry.date).toLocaleString()}</strong></p>
-                        <p>${entry.text}</p>
-                        ${entry.mood ? `<p>Mood: ${entry.mood}</p>` : ''}
-                    `;
-                    journalEntriesDiv.appendChild(entryElement);
-                });
-            }
-        } else if (data.journalEntries && data.journalEntries.length === 0) {
-            // If MongoDB has no entries, clear localStorage as well
-            localStorage.setItem(localStorageKey, JSON.stringify([]));
-            if (journalEntriesDiv) {
-                journalEntriesDiv.innerHTML = '';
-            }
-        }
-    } catch (error) {
-        console.error('Error loading journal entries from MongoDB:', error);
-        // Keep showing localStorage data if MongoDB fetch fails
-    }
-}
-
-// Call loadJournalEntries when the page loads
-document.addEventListener('DOMContentLoaded', loadJournalEntries);
   
