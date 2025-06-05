@@ -1,14 +1,16 @@
 # LYF 180
- 
- > Authors: 
-[Anisha Nawar](https://github.com/anishanawar)
-[Sookie Drabla](https://github.com/Sdrabla)
-[Uma Akundi](https://github.com/umizoomiexe)
-[Devin Peters](https://github.com/dpete050)
-[Evan Fang](https://github.com/evanzfang)
+
+> Authors:  
+[Anisha Nawar](https://github.com/anishanawar)  
+[Sookie Drabla](https://github.com/Sdrabla)  
+[Uma Akundi](https://github.com/umizoomiexe)  
+[Devin Peters](https://github.com/dpete050)  
+[Evan Fang](https://github.com/evanzfang)  
 [Julian Muñoz](https://github.com/JulianIMunoz)
 
-Welcome to **LYF 180** – a gentle space designed to support your journey of self-growth and balanced living. This web app is here to help you manage your healthy short-term and long-term goals, track daily habits, and celebrate every small win along the way!
+Welcome to **LYF 180** – a calming space designed to support your journey of self-growth and balanced living. This web app helps you manage short- and long-term goals, track daily habits, and celebrate every small win along the way.
+
+---
 
 ## Table of Contents
 - [Overview](#overview)
@@ -17,78 +19,110 @@ Welcome to **LYF 180** – a gentle space designed to support your journey of se
 - [User Stories & Kanban Board](#user-stories--kanban-board)
 - [Tech Stack](#tech-stack)
 
+---
+
 ## Overview
-LYF 180 isn’t just another productivity tool—it’s your personal sanctuary for planning, tracking, and achieving your goals in a calm and mindful way. Whether you’re setting new habits or reaching for long-term dreams, this app is here to support you every step of the way.
+LYF 180 isn’t just another productivity tool—it’s your personal sanctuary for planning, tracking, and achieving your goals in a mindful way. Whether you’re forming new habits or chasing long-term ambitions, this app is designed to support you at every step.
+
+---
 
 ## Project Motivation
-We know life can feel overwhelming when it comes to balancing academics, careers, and personal growth. That’s why LYF 180 was born. It’s a peaceful corner where you can organize your thoughts, set clear intentions, and gradually build the life you envision. Our aim is to offer you a soothing tool that not only tracks progress but also inspires you to keep moving forward.
+Life can feel overwhelming when balancing academics, careers, and self-care. LYF 180 was created as a digital haven where users can set intentions, track progress, and find encouragement. Our goal is to provide a gentle tool that inspires meaningful progress.
+
+---
 
 ## Features
-- **Personalized Account Management:**  
-  Create and manage your account securely, so you can keep track of your goals, progress, and daily habits in one safe place.
+- **Personalized Account Management**  
+  Create and manage your account securely to track your goals and habits in one safe space.
 
-- **Goal Setting & Tracking:**  
-  Set both short-term and long-term goals that align with your personal vision, and mark them as completed as you achieve them.
+- **Goal Setting & Tracking**  
+  Set and achieve both short- and long-term goals aligned with your personal vision.
 
-- **Habit Tracking:**  
-  Integrate healthy habits into your daily routine and check them off as you nurture your growth and well-being.
+- **Habit Tracking**  
+  Integrate healthy habits into your routine and check them off daily.
 
-- **Engagement Streaks:**  
-  Stay motivated with a gentle streak counter that reflects your consistent efforts and progress.
+- **Engagement Streaks**  
+  Stay motivated with streak counters that reflect your ongoing efforts.
 
-- **User Statistics:**  
-  Visualize your journey with calming graphs and charts that display your progress over time, from weekly habits to monthly achievements.
+- **User Statistics**  
+  View calming visualizations of your progress over time—weekly, monthly, and beyond.
 
-- **Motivational Quotes:**  
-  Receive daily inspirational quotes designed to uplift and encourage you on your journey.
+- **Motivational Quotes**  
+  Receive daily quotes designed to uplift and support your growth journey.
 
-- **Future Enhancements:**  
-  We’re planning to integrate a unifying feature that will further harmonize the app’s design and user experience.
+- **Future Enhancements**  
+  We plan to unify and refine the overall design and user experience.
+
+---
 
 ## User Stories & Kanban Board
 
-### User Story 1: Account Access & Management [Anisha]
+### User Story 1: Account Access & Management – *Anisha*
 - **Story:**  
-  *As a user, I want to create and manage my account with ease so I can safely track my progress and personal growth.*
+  *As a user, I want to securely create and manage my account so I can track my personal goals and growth over time.*
 
   **Kanban Tasks:**
-  - **To Do:**
-    - Research the tech stack needed for account creation, and management.
-    - 
   - **In Progress:**
-    - Account Access: Create a functional Login page that includes user inputting a Username and Password
-    - 
+    - [To be updated]
   - **Completed:**
-  - 
+    - Build login and registration pages with form validation
+    - Research authentication methods and user session management
 
-### User Story 2: Habit Tracking & Personal Growth Engagement [Julian]
-- **Story:**  
-  *As a user, I want to track my engagement with the app and have metrics for my goals.*
-  
-  **Kanban Tasks:**
-  - **To Do:**
-    - Implement a system that will track daily engagement.
-    - Create a page that shows the percentage of completed goals throughout the week.
-  - **In Progress:**
-    - 
-  - **Completed:**
-    - 
+---
 
-### User Story 3: Light/Dark Mode [Julian]
+### User Story 2: Habit Tracking & Personal Growth Engagement – *Julian*
 - **Story:**  
-  *As a user, I want to be able to swap between a light and dark mode on the app at will to suit to suit my preferences.*
-  
+  *As a user, I want to track my engagement and see metrics for my habits and goals to stay motivated.*
+
   **Kanban Tasks:**
-  - **To Do:**
-    - Implement an option that allows users to swap between a light/dark display.
-    - Have the current display setting remembered through logins.
-  - **In Progress:**
-    - 
-  - **Completed:**
-    - 
+  - **In Progress:**  
+    - [To be updated]
+  - **Completed:**  
+    - Design a dashboard that visualizes habit completion  
+    - Track daily and weekly goal engagement
+
+---
+
+### User Story 3: Improved UI Design & Theme Personalization – *Sookie*
+- **Story:**  
+  *As a user, I want a clean and calming interface with the ability to toggle between light and dark themes to suit my mood and preferences.*
+
+  **Kanban Tasks:**
+  - **In Progress:**  
+    - [To be updated]
+  - **Completed:**  
+    - Redesign UI components for improved visual consistency and usability
+
+---
+
+### User Story 4: Backend Management & Database Integration – *Evan*
+- **Story:**  
+  *As a developer, I want to set up a scalable backend using Node.js and MongoDB to manage user data, goals, and habits efficiently.*
+
+  **Kanban Tasks:**
+  - **In Progress:**  
+    - [To be updated]
+  - **Completed:**  
+    - Set up MongoDB schema for users, goals, and habits  
+    - Create RESTful API endpoints for CRUD operations
+
+---
+
+### User Story 5: Goal and Habit Statistics – *Uma*
+- **Story:**  
+  *As a user, I want to see visual statistics of my goal and habit completion so I can reflect on my progress and adjust as needed.*
+
+  **Kanban Tasks:**
+  - **In Progress:**  
+    - [To be updated]
+  - **Completed:**  
+    - Design graphs and charts for weekly/monthly data  
+    - Integrate data from backend to update visuals in real time
+
+---
 
 ## Tech Stack
-- **Frontend:** HTML, CSS, JavaScript (framework chosen for a smooth, responsive experience)
-- **Backend:** [Our preferred backend language/framework]
-- **Database:** [Our chosen database framework]
-- **Other Tools:** GitHub for version control and mindful project tracking
+- **Frontend:** HTML, CSS, JavaScript  
+- **Backend:** Node.js, Express  
+- **Database:** MongoDB  
+- **Other Tools:** GitHub for version control, Figma for design mockups
