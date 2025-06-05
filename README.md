@@ -8,7 +8,7 @@
 [Evan Fang](https://github.com/evanzfang)  
 [Julian Muñoz](https://github.com/JulianIMunoz)
 
-Welcome to **LYF 180** – a calming space designed to support your journey of self-growth and balanced living. This web app helps you manage short- and long-term goals, track daily habits, and celebrate every small win along the way.
+Welcome to **LYF 180** – a calming space designed to support your journey of self-growth and balanced living. This web app helps you manage short- and long-term goals, track daily habits, and celebrate every small win along the way. Visit at https://lyf180.netlify.app/ 
 
 ---
 
