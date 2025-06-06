@@ -41,6 +41,9 @@ Life can feel overwhelming when balancing academics, careers, and self-care. LYF
 - **Habit Tracking**  
   Integrate healthy habits into your routine and check them off daily.
 
+- **Journal Entries with Smart Suggestions**
+  Have access to a smart suggestion tool that generates personalized suggestions based on your mood and journal entries. 
+
 - **Engagement Streaks**  
   Stay motivated with streak counters that reflect your ongoing efforts.
 
@@ -116,7 +119,9 @@ Life can feel overwhelming when balancing academics, careers, and self-care. LYF
   - **In Progress:**  
     - [To be updated]
   - **Completed:**  
-    - Design graphs and charts for weekly/monthly data  
+    - Design graphs and charts for weekly/monthly data
+    - Integrated merge conflicts
+    - Did conditionals for Acheievemnts section
     - Integrate data from backend to update visuals in real time
 
 ---
@@ -125,4 +130,4 @@ Life can feel overwhelming when balancing academics, careers, and self-care. LYF
 - **Frontend:** HTML, CSS, JavaScript  
 - **Backend:** Node.js, Express  
 - **Database:** MongoDB  
-- **Other Tools:** GitHub for version control, Figma for design mockups
+- **Other Tools:** GitHub for version control, Figma for design mockups, Lucidchart for Sprint planning and UML diagram 
