@@ -77,7 +77,10 @@ const userSchema = new mongoose.Schema({
     stats: {
         goalsCompleted: { type: Number, default: 0 },
         habitsCompleted: { type: Number, default: 0 },
-        streak: { type: Number, default: 0 }
+        streak: { type: Number, default: 0 },
+        progressPercent: { type: Number, default: 0},
+        totalHabits: { type: Number, default: 0 },
+        totalGoals: { type: Number, default: 0 }
     },
     moods: [{
         date: Date,
@@ -212,7 +215,10 @@ app.post('/api/users/register', async (req, res) => {
             stats: {
                 goalsCompleted: 0,
                 habitsCompleted: 0,
-                streak: 0
+                streak: 0,
+                progressPercent: 0,
+                totalHabits: 0,
+                totalGoals: 0
             },
             moods: [{
                 date: new Date(),
